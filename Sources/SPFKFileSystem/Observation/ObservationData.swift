@@ -2,20 +2,40 @@
 
 import Foundation
 
+/// Internal actor that coordinates multiple ``DirectoryObserver`` instances for recursive
+/// directory monitoring via kqueue.
+///
+/// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
+///
+/// This is the implementation backing ``DirectoryEnumerationObserver``. It creates one
+/// ``DirectoryObserver`` per subdirectory, collects their events, debounces them with a 0.3s
+/// delay, and delivers the accumulated batch to the ``DirectoryEnumerationObserverDelegate``.
+///
+/// When a `.new` event arrives at the root level that represents a directory, a new observer is
+/// automatically created. When a `.removed` event removes a directory, its observer is stopped
+/// and released.
+///
+/// > Note: On macOS, ``FSEventsDirectoryObserver`` provides the same recursive monitoring
+/// > with a single `FSEventStream` instead of N kqueue file descriptors.
 actor ObservationData {
+    /// The set of active per-directory observers.
     var observers = Set<DirectoryObserver>()
 
+    /// The set of directory URLs currently being observed.
     var observedDirectories: Set<URL> {
         Set<URL>(observers.map(\.url))
     }
 
+    /// Whether any observers are currently active.
     var isObserving: Bool { observers.isNotEmpty }
 
     private var eventQueue: Set<DirectoryEvent> = .init()
     private var eventTask: Task<Void, Error>?
 
+    /// The delegate that receives debounced event batches.
     var delegate: DirectoryEnumerationObserverDelegate?
 
+    /// The root directory URL being observed.
     let url: URL
 
     init(url: URL) throws {

@@ -3,6 +3,15 @@
 import Foundation
 import SwiftExtensions
 
+/// Collection of static file system utility methods for directory enumeration, file discovery,
+/// byte count formatting, and volume queries.
+///
+/// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
+///
+/// On macOS, additional methods for security-scoped file access and Finder tag management
+/// are available in ``SecureURLRegistry`` and the Tags extensions (``URL/tagNames``,
+/// ``TagColor``, ``FinderTagGroup``). An AppKit-dependent extension with `getAuthorizedFileURLs`
+/// and `requestDirectory` lives in `spfk-utils` as `FileSystem+AppKit.swift`.
 public enum FileSystem {
     // MARK: - File size calculations
 
@@ -47,6 +56,9 @@ public enum FileSystem {
         return byteCount
     }
 
+    /// Total size of the file system at the given path.
+    /// - Parameter path: The file system path to check.
+    /// - Returns: Total size in bytes, or `nil` if attributes cannot be read.
     public static func getSystemSizeInBytes(forPath path: String = "/") -> UInt64? {
         guard let attributes = try? FileManager.default
             .attributesOfFileSystem(forPath: path) else { return nil }
@@ -69,6 +81,7 @@ public enum FileSystem {
         return byteCountToString(byteCount)
     }
 
+    /// Returns URLs of all currently mounted volumes.
     public static func getMountedVolumes() -> [URL] {
         let keys: [URLResourceKey] = [
             .volumeNameKey,
@@ -79,6 +92,9 @@ public enum FileSystem {
         return FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: keys) ?? []
     }
 
+    /// Returns the volume URL that contains the given file URL.
+    /// - Parameter url: A file URL to look up.
+    /// - Returns: The volume URL, or `nil` if no matching volume is found.
     public static func volumeURL(forFileURL url: URL) -> URL? {
         let isExternal = url.pathComponents.contains("Volumes")
 
@@ -149,6 +165,15 @@ public enum FileSystem {
 
     // MARK: - File System
 
+    /// Returns the next available URL that doesn't conflict with existing files.
+    ///
+    /// Appends incrementing numbers (`_1`, `_2`, ...) to the filename until a non-existing
+    /// path is found.
+    /// - Parameters:
+    ///   - url: The desired URL.
+    ///   - delimiter: Separator before the number. Default is `"_"`.
+    ///   - suffix: Optional suffix appended to the base name before numbering.
+    /// - Returns: The original URL if available, or the first non-conflicting numbered variant.
     public static func nextAvailableURL(_ url: URL,
                                         delimiter: String = "_",
                                         suffix: String = "") -> URL
@@ -176,6 +201,11 @@ public enum FileSystem {
         return url
     }
 
+    /// Extracts a query string parameter value from a URL string.
+    /// - Parameters:
+    ///   - url: The URL string to parse.
+    ///   - param: The query parameter name.
+    /// - Returns: The parameter value, or `nil` if not found.
     public static func getQueryStringParameter(url: String,
                                                param: String) -> String?
     {
@@ -185,7 +215,14 @@ public enum FileSystem {
 
     // MARK: - getFileURLs / getFilePaths
 
-    // has overlap with getFileURLs
+    /// Returns all subdirectories within the given directory, optionally recursive.
+    ///
+    /// Resolves aliases and skips packages (bundles). Hidden files are skipped by default.
+    /// - Parameters:
+    ///   - directory: The root directory to enumerate.
+    ///   - recursive: Whether to descend into subdirectories.
+    ///   - skipHidden: Whether to skip hidden files and directories.
+    /// - Returns: An array of directory URLs found.
     public static func getDirectories(in directory: URL,
                                       recursive: Bool,
                                       skipHidden: Bool = true) -> [URL]
@@ -231,6 +268,11 @@ public enum FileSystem {
         return allFiles
     }
 
+    /// Searches recursively for a folder with the given name.
+    /// - Parameters:
+    ///   - folderName: The `lastPathComponent` to match.
+    ///   - directory: The root directory to search.
+    /// - Returns: The URL of the first matching folder, or `nil` if not found.
     public static func searchRecursivelyForFolder(named folderName: String, in directory: URL) -> URL? {
         FileSystem.getDirectories(in: directory, recursive: true).first(
             where: { subfolder in
@@ -239,7 +281,16 @@ public enum FileSystem {
         )
     }
 
-    // DRY with getFileURLs but specific to packages such as .addLibrary
+    /// Returns all package (bundle) URLs within the given directory.
+    ///
+    /// Similar to ``getFileURLs(in:withExtension:recursive:allowedPackageTypes:skipsHiddenFiles:skipsPackageDescendants:sorted:)``
+    /// but specifically targets macOS packages (e.g., `.app`, `.framework`, custom types).
+    /// - Parameters:
+    ///   - directory: The root directory to enumerate.
+    ///   - withExtension: Optional file extension filter (case-insensitive).
+    ///   - recursive: Whether to descend into subdirectories.
+    ///   - skipHidden: Whether to skip hidden files. Default is `true`.
+    /// - Returns: An array of package URLs.
     public static func getPackages(in directory: URL,
                                    withExtension: String? = nil,
                                    recursive: Bool,

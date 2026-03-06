@@ -5,11 +5,35 @@
 
     // https://developer.apple.com/documentation/coreservices/file_metadata/mditem/common_metadata_attribute_keys
 
-    /// Parses the finder tags from this `URL`
+    /// Finder tag read/write extensions for `URL`.
+    ///
+    /// **macOS only** (`#if os(macOS)`).
+    ///
+    /// These properties and methods read and write the
+    /// `com.apple.metadata:_kMDItemUserTags` extended attribute, which is the
+    /// storage mechanism macOS Finder uses for both built-in color labels and
+    /// custom text tags. Each tag is stored as a property-list–encoded string
+    /// array; color tags use the format `"Color\nIndex"` (e.g., `"Red\n6"`),
+    /// while text-only tags are bare strings.
+    ///
+    /// Reading is non-throwing — missing or unreadable attributes return empty
+    /// arrays. Writing is throwing because xattr operations can fail (e.g., on
+    /// read-only volumes).
+    ///
+    /// The underlying xattr I/O is performed by ``setExtendedAttributeAndModify(name:value:options:)``
+    /// in `URL+XAttr.swift`, which also bumps the file's modification date so
+    /// Spotlight picks up the change.
+    ///
+    /// - SeeAlso: ``TagColor``, ``FinderTagDescription``, ``FinderTagGroup``
     extension URL {
+        /// The xattr key for Finder user tags.
         static let userTagsKey = "com.apple.metadata:_kMDItemUserTags"
 
-        /// The values of all tags attached to the `URL`
+        /// The raw tag name strings attached to this file URL.
+        ///
+        /// Color tags appear in `"Color\nIndex"` format (e.g., `"Red\n6"`);
+        /// custom text tags are plain strings. Returns an empty array if the
+        /// attribute is missing or cannot be read.
         public var tagNames: [String] {
             do {
                 let data = try extendedAttributeValue(forName: Self.userTagsKey)
@@ -25,10 +49,20 @@
             }
         }
 
+        /// The ``TagColor`` values derived from this file's tags.
+        ///
+        /// Only tags that match a known color label (via ``TagColor/init(label:)``)
+        /// are included; custom text-only tags are omitted.
         public var tagColors: [TagColor] {
             tagNames.compactMap { TagColor(label: $0) }
         }
 
+        /// All Finder tags on this file as ``FinderTagDescription`` values.
+        ///
+        /// Both color labels and custom text-only tags are included. Tags that
+        /// match a known ``TagColor`` are created via
+        /// ``FinderTagDescription/init(tagColor:)``, while unrecognised strings
+        /// become text-only descriptions via ``FinderTagDescription/init(label:)``.
         public var finderTags: [FinderTagDescription] {
             var tags = [FinderTagDescription]()
 
@@ -48,11 +82,22 @@
             return tags
         }
 
+        /// Replaces this file's Finder color tags.
+        ///
+        /// Converts each ``TagColor`` to its ``TagColor/dataElement`` string and
+        /// writes the result to the `_kMDItemUserTags` extended attribute.
+        /// - Parameter tagColors: The color tags to apply. Pass an empty array
+        ///   to remove all tags.
         public func set(tagColors: [TagColor]) throws {
             let labels: [String] = tagColors.compactMap(\.dataElement)
             try set(tagNames: labels)
         }
 
+        /// Replaces this file's Finder tags with the given raw name strings.
+        ///
+        /// If `tagNames` is empty, all tags are removed via ``removeAllTags()``.
+        /// - Parameter tagNames: Raw tag strings in the format stored by the
+        ///   xattr (e.g., `"Red\n6"` for colors, or plain text for custom tags).
         public func set(tagNames: [String]) throws {
             guard tagNames.isNotEmpty else {
                 try removeAllTags()
@@ -67,6 +112,11 @@
             )
         }
 
+        /// Replaces this file's Finder tags from a ``FinderTagGroup``.
+        ///
+        /// Color tags are written using their ``TagColor/dataElement`` encoding,
+        /// followed by any text-only tags (those with ``TagColor/none``).
+        /// - Parameter finderTags: The tag group to apply.
         public func set(finderTags: FinderTagGroup) throws {
             let colors: [String] = finderTags.tagColors.compactMap(\.dataElement)
             let textTags: [String] = finderTags.tags.filter { $0.tagColor == .none }.map(\.label)
@@ -74,6 +124,10 @@
             try set(tagNames: colors + textTags)
         }
 
+        /// Removes all Finder tags from this file.
+        ///
+        /// Writes an empty property-list array to the `_kMDItemUserTags` xattr
+        /// and updates the file's modification date.
         public func removeAllTags() throws {
             let empty: [String] = []
 
@@ -84,13 +138,24 @@
         }
     }
 
+    /// Batch Finder tag operations on an array of file URLs.
+    ///
+    /// **macOS only** (`#if os(macOS)`).
+    ///
+    /// Convenience methods that apply the same set of tags to every URL in the
+    /// array. Each call iterates the array and delegates to the single-URL
+    /// ``URL/set(tagNames:)`` or ``URL/set(tagColors:)`` method.
     extension [URL] {
+        /// Applies the given raw tag name strings to every URL in the array.
+        /// - Parameter tagNames: Raw tag strings (see ``URL/set(tagNames:)``).
         public func set(tagNames: [String]) throws {
             for url in self {
                 try url.set(tagNames: tagNames)
             }
         }
 
+        /// Applies the given color tags to every URL in the array.
+        /// - Parameter tagColors: The color tags to apply (see ``URL/set(tagColors:)``).
         public func set(tagColors: [TagColor]) throws {
             for url in self {
                 try url.set(tagColors: tagColors)

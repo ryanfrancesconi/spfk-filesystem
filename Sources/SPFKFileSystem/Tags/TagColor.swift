@@ -7,7 +7,17 @@
 
     // swiftformat:disable consecutiveSpaces
 
-    /// Default macOS label colors
+    /// The 7 built-in macOS Finder label colors plus `.none`.
+    ///
+    /// **macOS only** (`#if canImport(AppKit) && !targetEnvironment(macCatalyst)`).
+    ///
+    /// Raw values match the Finder's internal label indices (0–7). The ``dataElement`` property
+    /// produces the string format stored in the `com.apple.metadata:_kMDItemUserTags` extended
+    /// attribute, and ``nsColor`` / ``cgColor`` provide the display colors sourced from
+    /// `NSWorkspace.shared.fileLabelColors`.
+    ///
+    /// Initialize from a display name with ``init(name:)`` or from the xattr data element
+    /// string with ``init(label:)``.
     public enum TagColor: Int, Hashable, CaseIterable, Comparable, Codable, Sendable {
         public static func < (lhs: TagColor, rhs: TagColor) -> Bool {
             lhs.name.standardCompare(with: rhs.name)
@@ -40,10 +50,12 @@
             }
         }
 
+        /// The `NSColor` for this label color, sourced from `NSWorkspace.shared.fileLabelColors`.
         public var nsColor: NSColor? {
             Self.array[self]
         }
 
+        /// The `CGColor` equivalent of ``nsColor``.
         public var cgColor: CGColor? {
             nsColor?.cgColor
         }
@@ -63,6 +75,8 @@
             }
         }
 
+        /// Creates a tag color from its display name (e.g., `"Red"`, `"Blue"`).
+        /// - Returns: `nil` if no case matches the given name.
         public init?(name: String) {
             for item in Self.allCases where item.name == name {
                 self = item
@@ -72,6 +86,8 @@
             return nil
         }
 
+        /// Creates a tag color from its xattr data element string (e.g., `"Red\n6"`).
+        /// - Returns: `nil` if no case matches the given data element.
         public init?(label: String) {
             for item in Self.allCases where item.dataElement == label {
                 self = item

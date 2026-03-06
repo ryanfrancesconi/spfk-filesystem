@@ -4,19 +4,54 @@
     import CoreServices
     import Foundation
 
-    /// macOS-only directory observer using the FSEvents API for efficient recursive monitoring.
+    /// macOS-only recursive directory observer using the CoreServices FSEvents API.
     ///
-    /// Unlike `DirectoryObserver` which creates one kqueue file descriptor per directory,
+    /// **macOS only** (`#if os(macOS)`). Not available on iOS, tvOS, or watchOS.
+    ///
+    /// Unlike the cross-platform ``DirectoryEnumerationObserver`` which creates one kqueue-based
+    /// ``DirectoryObserver`` (file descriptor + `DispatchSource`) per subdirectory,
     /// `FSEventsDirectoryObserver` uses a single `FSEventStream` to monitor an entire directory
-    /// tree recursively. This is more efficient for large directory hierarchies and automatically
-    /// handles subdirectory creation and deletion.
+    /// tree recursively. This is significantly more efficient for large hierarchies and
+    /// automatically handles subdirectory creation and deletion without managing observer lifecycle.
     ///
-    /// Produces the same `DirectoryEvent` values as the existing observation system.
+    /// ## How It Works
+    ///
+    /// 1. On `start()`, an `FSEventStream` is created with per-file event granularity
+    ///    (`kFSEventStreamCreateFlagFileEvents`).
+    /// 2. When the stream fires, a full recursive snapshot (`Set<URL>`) is taken and diffed
+    ///    against the previous snapshot to produce ``DirectoryEvent/new(files:source:)`` and
+    ///    ``DirectoryEvent/removed(files:source:)`` events.
+    /// 3. Events are coalesced over a short internal window (0.05s) before delivery to the
+    ///    ``DirectoryEnumerationObserverDelegate``.
+    ///
+    /// ## Platform Comparison
+    ///
+    /// | | `DirectoryEnumerationObserver` | `FSEventsDirectoryObserver` |
+    /// |---|---|---|
+    /// | Platform | All Apple platforms | macOS only |
+    /// | Underlying API | kqueue (`DispatchSource`) | CoreServices `FSEventStream` |
+    /// | Resources | 1 file descriptor per subdirectory | 1 stream total |
+    /// | Recursive | Via ``ObservationData`` coordination | Built-in |
+    /// | `start()` | `async throws` (opens file descriptors) | Non-throwing |
+    /// | Event source URL | Per-subdirectory | Root URL only |
+    /// | Stabilization | Polls file sizes until stable | FSEvents `latency` parameter |
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// let observer = try FSEventsDirectoryObserver(url: rootURL, delegate: myDelegate)
+    /// await observer.start()
+    /// // ... events delivered via myDelegate.directoryUpdated(events:) ...
+    /// await observer.stop()
+    /// ```
     public actor FSEventsDirectoryObserver {
+        /// The root directory URL being observed recursively.
         public nonisolated let url: URL
 
+        /// The delegate receiving coalesced ``DirectoryEvent`` batches.
         public weak var delegate: DirectoryEnumerationObserverDelegate?
 
+        /// The FSEvents coalescing latency in seconds.
         private let latency: CFTimeInterval
 
         private var stream: FSEventStreamRef?
@@ -45,7 +80,13 @@
             self.previousSnapshot = Self.recursiveContents(of: url)
         }
 
-        /// Starts observing the directory for file system changes.
+        /// Starts observing the directory tree for file system changes.
+        ///
+        /// Creates an `FSEventStream` scheduled on the main dispatch queue with per-file event
+        /// granularity. Unlike ``DirectoryObserver/start()``, this method is non-throwing — if
+        /// stream creation fails, an error is logged and no events will be delivered.
+        ///
+        /// Idempotent — calling `start()` while already observing is a no-op.
         public func start() {
             guard stream == nil else { return }
 
@@ -87,7 +128,10 @@
             Log.debug("FSEventsDirectoryObserver started for \(url.path)")
         }
 
-        /// Stops observing the directory.
+        /// Stops observing and releases the `FSEventStream`.
+        ///
+        /// Cancels any pending coalescing task and clears the event queue. Safe to call
+        /// multiple times.
         public func stop() {
             guard let stream else { return }
 
