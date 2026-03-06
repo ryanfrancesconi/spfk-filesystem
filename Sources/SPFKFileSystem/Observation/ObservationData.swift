@@ -53,7 +53,7 @@ actor ObservationData {
 
 extension ObservationData {
     func start() async throws {
-        let allDirectories = Set<URL>([url] + FileSystem.getDirectories(in: url, recursive: true))
+        let allDirectories = Set<URL>([url] + FileSystem.enumerateDirectories(in: url, recursive: true))
 
         try await startFileObservation(for: allDirectories)
     }

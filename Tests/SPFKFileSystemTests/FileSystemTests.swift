@@ -36,21 +36,21 @@ class FileSystemTests: BinTestCase {
     }
 
     // seems to fail with [] - permissions?
-    @Test func getFileURLs() throws {
+    @Test func enumerateFiles() throws {
         let directory = TestBundleResources.shared.resourcesDirectory
 
-        let urls = FileSystem.getFileURLs(in: directory, recursive: true)
+        let urls = FileSystem.enumerateFiles(in: directory, recursive: true)
 
         Log.debug(urls)
 
         #expect(urls.count > 0)
     }
 
-    @Test func getDirectories() throws {
+    @Test func enumerateDirectories() throws {
         try FileManager.default.createDirectory(at: bin.appendingPathComponent("dir1", conformingTo: .folder), withIntermediateDirectories: false)
         try FileManager.default.createDirectory(at: bin.appendingPathComponent("dir2", conformingTo: .folder), withIntermediateDirectories: false)
 
-        let allDirs = FileSystem.getDirectories(in: bin, recursive: true)
+        let allDirs = FileSystem.enumerateDirectories(in: bin, recursive: true)
 
         Log.debug(allDirs.map(\.path))
 
@@ -98,7 +98,7 @@ class FileSystemTests: BinTestCase {
         }
 
         // Compare with synchronous version
-        let syncURLs = FileSystem.getFileURLs(in: [bin])
+        let syncURLs = FileSystem.enumerateFiles(in: [bin])
 
         #expect(Set(streamURLs) == syncURLs)
         #expect(streamURLs.count == 8)

@@ -23,10 +23,11 @@ extension FileSystem {
     ///   - delimiter: Separator before the number. Default is `"_"`.
     ///   - suffix: Optional suffix appended to the base name before numbering.
     /// - Returns: The original URL if available, or the first non-conflicting numbered variant.
-    public static func nextAvailableURL(_ url: URL,
-                                        delimiter: String = "_",
-                                        suffix: String = "") -> URL
-    {
+    public static func nextAvailableURL(
+        _ url: URL,
+        delimiter: String = "_",
+        suffix: String = ""
+    ) -> URL {
         guard url.exists else { return url } // no need to do anything
 
         let isDirectory = url.isDirectory
@@ -60,10 +61,11 @@ extension FileSystem {
     ///   - recursive: Whether to descend into subdirectories.
     ///   - skipHidden: Whether to skip hidden files and directories.
     /// - Returns: An array of directory URLs found.
-    public static func getDirectories(in directory: URL,
-                                      recursive: Bool,
-                                      skipHidden: Bool = true) -> [URL]
-    {
+    public static func enumerateDirectories(
+        in directory: URL,
+        recursive: Bool,
+        skipHidden: Bool = true
+    ) -> [URL] {
         guard directory.exists else {
             Log.error(directory, "doesn't exist")
             return []
@@ -99,7 +101,7 @@ extension FileSystem {
                 // (unlike symlinks). Recursively enumerate the resolved target.
                 if recursive, localURL.isDirectory, !localURL.isPackage {
                     allFiles.append(localURL)
-                    allFiles += getDirectories(
+                    allFiles += enumerateDirectories(
                         in: localURL,
                         recursive: true,
                         skipHidden: skipHidden
@@ -116,13 +118,17 @@ extension FileSystem {
         return allFiles
     }
 
-    /// Searches recursively for a folder with the given name.
+    /// Finds the first subdirectory matching the given name by recursively
+    /// enumerating from the root directory.
+    ///
+    /// Uses ``enumerateDirectories(in:recursive:skipHidden:)`` internally and
+    /// returns the first match by `lastPathComponent`.
     /// - Parameters:
     ///   - folderName: The `lastPathComponent` to match.
     ///   - directory: The root directory to search.
     /// - Returns: The URL of the first matching folder, or `nil` if not found.
-    public static func searchRecursivelyForFolder(named folderName: String, in directory: URL) -> URL? {
-        FileSystem.getDirectories(in: directory, recursive: true).first(
+    public static func findDirectory(named folderName: String, in directory: URL) -> URL? {
+        FileSystem.enumerateDirectories(in: directory, recursive: true).first(
             where: { subfolder in
                 subfolder.lastPathComponent == folderName
             }
@@ -133,7 +139,7 @@ extension FileSystem {
 
     /// Returns all package (bundle) URLs within the given directory.
     ///
-    /// Similar to ``getFileURLs(in:withExtension:recursive:allowedPackageTypes:skipsHiddenFiles:skipsPackageDescendants:sorted:)``
+    /// Similar to ``enumerateFiles(in:recursive:options:)``
     /// but specifically targets macOS packages (e.g., `.app`, `.framework`, custom types).
     /// - Parameters:
     ///   - directory: The root directory to enumerate.
@@ -141,11 +147,12 @@ extension FileSystem {
     ///   - recursive: Whether to descend into subdirectories.
     ///   - skipHidden: Whether to skip hidden files. Default is `true`.
     /// - Returns: An array of package URLs.
-    public static func getPackages(in directory: URL,
-                                   withExtension: String? = nil,
-                                   recursive: Bool,
-                                   skipHidden: Bool = true) -> [URL]
-    {
+    public static func enumeratePackages(
+        in directory: URL,
+        withExtension: String? = nil,
+        recursive: Bool,
+        skipHidden: Bool = true
+    ) -> [URL] {
         guard directory.exists else {
             Log.error(directory, "doesn't exist")
             return []
@@ -192,14 +199,55 @@ extension FileSystem {
 
     // MARK: - File enumeration
 
-    /// Create a flat set of urls containing only file urls.
-    /// Recursively scans directories.
-    public static func getFileURLs(in urls: [URL]) -> Set<URL> {
+    /// Options for controlling file enumeration behavior in ``enumerateFiles(in:recursive:options:)``.
+    ///
+    /// All properties use sensible defaults — create with `.init()` for standard behavior
+    /// (skip hidden files, skip package contents, no extension filter, unsorted).
+    public struct FileDiscoveryEnumerationOptions: Sendable {
+        /// Optional file extension filter (case-insensitive).
+        public var fileExtension: String?
+
+        /// Package types whose contents should be enumerated rather than treated as leaf files.
+        public var allowedPackageTypes: [String] = []
+
+        /// Whether to skip hidden files and directories. Default is `true`.
+        public var skipsHiddenFiles: Bool = true
+
+        /// Whether to skip descending into packages. Default is `true`.
+        public var skipsPackageDescendants: Bool = true
+
+        /// Whether to sort results by filename. Default is `false`.
+        public var sorted: Bool = false
+
+        public init(
+            fileExtension: String? = nil,
+            allowedPackageTypes: [String] = [],
+            skipsHiddenFiles: Bool = true,
+            skipsPackageDescendants: Bool = true,
+            sorted: Bool = false
+        ) {
+            self.fileExtension = fileExtension
+            self.allowedPackageTypes = allowedPackageTypes
+            self.skipsHiddenFiles = skipsHiddenFiles
+            self.skipsPackageDescendants = skipsPackageDescendants
+            self.sorted = sorted
+        }
+    }
+
+    /// Returns a deduplicated set of file URLs from the given inputs.
+    ///
+    /// Directories and packages in the input array are recursively scanned for their
+    /// contained files. Plain file URLs are included directly. The returned set
+    /// excludes directories and packages themselves.
+    ///
+    /// - Parameter urls: An array of file or directory URLs to scan.
+    /// - Returns: A `Set` of unique file URLs discovered across all inputs.
+    public static func enumerateFiles(in urls: [URL]) -> Set<URL> {
         var result = Set<URL>()
 
         for url in urls {
             if url.isDirectoryOrPackage {
-                for file in getFileURLs(in: url, recursive: true) where !file.isDirectoryOrPackage {
+                for file in enumerateFiles(in: url, recursive: true) where !file.isDirectoryOrPackage {
                     result.insert(file)
                 }
             } else {
@@ -210,92 +258,87 @@ extension FileSystem {
         return result
     }
 
-    /// Returns all files at the given URL.
-    public static func getFileURLs(
+    /// Returns all file URLs within the given directory.
+    ///
+    /// Walks the directory tree using `FileManager.enumerator`, resolving Finder aliases
+    /// and classifying each URL as a file, directory, or package. Alias targets that are
+    /// directories are recursively enumerated (the system enumerator follows symlinks but
+    /// not Finder aliases).
+    ///
+    /// - Parameters:
+    ///   - directory: The root directory to enumerate.
+    ///   - recursive: Whether to descend into subdirectories.
+    ///   - options: Controls extension filtering, hidden-file skipping, package handling,
+    ///     and result sorting. See ``FileDiscoveryEnumerationOptions``.
+    /// - Returns: An array of file URLs found. May include packages treated as leaf files
+    ///   when `skipsPackageDescendants` is `false` and the package type is not in
+    ///   ``FileDiscoveryEnumerationOptions/allowedPackageTypes``.
+    public static func enumerateFiles(
         in directory: URL,
-        withExtension: String? = nil,
         recursive: Bool,
-        allowedPackageTypes: [String] = [],
-        skipsHiddenFiles: Bool = true,
-        skipsPackageDescendants: Bool = true,
-        sorted: Bool = false
+        options: FileDiscoveryEnumerationOptions = .init()
     ) -> [URL] {
         guard directory.exists else {
             Log.error(directory, "doesn't exist")
             return []
         }
 
-        var options: FileManager.DirectoryEnumerationOptions = []
+        var fmOptions: FileManager.DirectoryEnumerationOptions = []
 
         if !recursive {
-            options.insert(.skipsSubdirectoryDescendants)
+            fmOptions.insert(.skipsSubdirectoryDescendants)
         }
 
-        if skipsHiddenFiles {
-            options.insert(.skipsHiddenFiles)
+        if options.skipsHiddenFiles {
+            fmOptions.insert(.skipsHiddenFiles)
         }
 
-        if skipsPackageDescendants {
-            options.insert(.skipsPackageDescendants)
+        if options.skipsPackageDescendants {
+            fmOptions.insert(.skipsPackageDescendants)
         }
 
         guard let enumerator = FileManager().enumerator(
             at: directory,
             includingPropertiesForKeys: enumerationResourceKeys,
-            options: options
+            options: fmOptions
         ) else {
             return []
         }
 
         var allFiles = [URL]()
 
-        while var localURL = enumerator.nextObject() as? URL {
-            if localURL.isAlias, let resolved = localURL.resolveAlias() {
-                localURL = resolved
+        while var url = enumerator.nextObject() as? URL {
+            var isResolvedAlias = false
 
-                // Finder aliases to directories aren't followed by the enumerator.
-                // Recursively enumerate the resolved target.
-                if recursive, localURL.isDirectoryOrPackage {
-                    if localURL.isPackage, skipsPackageDescendants {
-                        continue
-                    } else if localURL.isPackage, !allowedPackageTypes.contains(localURL.pathExtension) {
-                        allFiles.append(localURL)
-                    } else {
-                        allFiles += getFileURLs(
-                            in: localURL,
-                            withExtension: withExtension,
-                            recursive: true,
-                            allowedPackageTypes: allowedPackageTypes,
-                            skipsHiddenFiles: skipsHiddenFiles,
-                            skipsPackageDescendants: skipsPackageDescendants
-                        )
-                    }
-                    continue
-                }
+            if url.isAlias, let resolved = url.resolveAlias() {
+                url = resolved
+                isResolvedAlias = true
             }
 
-            if localURL.isPackage, skipsPackageDescendants {
+            switch classify(url, options: options) {
+            case .skipPackage:
                 continue
 
-            } else if localURL.isPackage, !allowedPackageTypes.contains(localURL.pathExtension) {
-                // Treat package as leaf file, don't descend into it
-                allFiles.append(localURL)
-                enumerator.skipDescendants()
+            case .leafPackage:
+                allFiles.append(url)
+                // Only call skipDescendants for real enumerator children, not resolved aliases
+                if !isResolvedAlias { enumerator.skipDescendants() }
 
-            } else if localURL.isDirectoryOrPackage {
-                // Plain directory or allowed-type package: enumerator descends automatically
-                continue
-
-            } else if let withExtension {
-                if localURL.pathExtension.equalsIgnoringCase(withExtension) {
-                    allFiles.append(localURL)
+            case .directory:
+                // Finder aliases to directories aren't followed by the enumerator.
+                // Recursively enumerate the resolved target.
+                if isResolvedAlias, recursive {
+                    allFiles += enumerateFiles(in: url, recursive: true, options: options)
                 }
-            } else {
-                allFiles.append(localURL)
+
+            case .file:
+                if matchesExtension(url, options.fileExtension) {
+                    allFiles.append(url)
+                }
             }
         }
 
-        if sorted {
+        if options.sorted {
             allFiles.sort {
                 $0.lastPathComponent.standardCompare(
                     with: $1.lastPathComponent,
@@ -307,12 +350,52 @@ extension FileSystem {
         return allFiles
     }
 
+    // MARK: - Private helpers
+
+    /// Classification of a URL encountered during directory enumeration.
+    private enum URLClassification {
+        /// Regular file — append to results.
+        case file
+        /// Plain directory or allowed package type — enumerator descends automatically.
+        case directory
+        /// Package treated as a leaf file — append to results, skip descendants.
+        case leafPackage
+        /// Package that should be ignored entirely (when skipping package descendants).
+        case skipPackage
+    }
+
+    /// Classifies a URL for enumeration handling.
+    private static func classify(
+        _ url: URL,
+        options opts: FileDiscoveryEnumerationOptions
+    ) -> URLClassification {
+        if url.isPackage {
+            if opts.skipsPackageDescendants {
+                return .skipPackage
+            } else if !opts.allowedPackageTypes.contains(url.pathExtension) {
+                return .leafPackage
+            }
+        }
+
+        if url.isDirectoryOrPackage {
+            return .directory
+        }
+
+        return .file
+    }
+
+    /// Returns `true` if the URL matches the given extension filter, or if no filter is set.
+    private static func matchesExtension(_ url: URL, _ ext: String?) -> Bool {
+        guard let ext else { return true }
+        return url.pathExtension.equalsIgnoringCase(ext)
+    }
+
     // MARK: - Async streaming
 
     /// Yields file URLs as they are discovered, allowing callers to begin processing
     /// before the full enumeration completes.
     ///
-    /// This is the streaming equivalent of ``getFileURLs(in:)-6p0n5``.
+    /// This is the streaming equivalent of ``enumerateFiles(in:)``.
     /// Deduplication is performed inline.
     ///
     /// - Parameter urls: An array of file or directory URLs to scan.
@@ -328,7 +411,7 @@ extension FileSystem {
                 }
 
                 if url.isDirectoryOrPackage {
-                    for file in getFileURLs(in: url, recursive: true) where !file.isDirectoryOrPackage {
+                    for file in enumerateFiles(in: url, recursive: true) where !file.isDirectoryOrPackage {
                         if seen.insert(file).inserted {
                             continuation.yield(file)
                         }

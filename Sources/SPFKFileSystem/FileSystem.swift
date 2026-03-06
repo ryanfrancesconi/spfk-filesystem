@@ -8,14 +8,13 @@ import Foundation
 /// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
 ///
 /// Methods are organized into focused extensions:
-/// - ``byteCountToString(_:)`` / ``stringToByteCount(_:)`` — byte count formatting
 /// - ``getMountedVolumes()`` / ``volumeURL(forFileURL:)`` — volume queries
-/// - ``getFileURLs(in:)-6p0n5`` / ``getDirectories(in:recursive:skipHidden:)`` — file enumeration
+/// - ``enumerateFiles(in:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` — file enumeration
 /// - ``deleteEmptyDirectories(in:)`` — cleanup
 /// - ``fileURLStream(in:)`` — async streaming enumeration
 ///
 /// On macOS, additional methods for security-scoped file access and Finder tag management
 /// are available in ``SecureURLRegistry`` and the Tags extensions (``URL/tagNames``,
-/// ``TagColor``, ``FinderTagGroup``). An AppKit-dependent extension with `getAuthorizedFileURLs`
+/// ``TagColor``, ``FinderTagGroup``). An AppKit-dependent extension with `authorizedFileURLs`
 /// and `requestDirectory` lives in `spfk-utils` as `FileSystem+AppKit.swift`.
 public enum FileSystem {}
