@@ -1,11 +1,11 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
 /// SPFKFileSystem provides cross-platform file system utilities for Apple platforms (macOS, iOS),
-/// including directory enumeration, file observation, byte count helpers, and Finder tag support.
+/// including directory enumeration, file observation, and Finder tag support.
 ///
 /// ## Platform Availability
 ///
-/// - **Cross-platform** (macOS + iOS): ``FileSystem``, ``ByteCount``, ``DirectoryObserver``,
+/// - **Cross-platform** (macOS + iOS): ``FileSystem``, ``DirectoryObserver``,
 ///   ``DirectoryEnumerationObserver``, ``DirectoryEvent``, URL extended attributes.
 /// - **macOS only**: ``FSEventsDirectoryObserver`` (CoreServices FSEvents API),
 ///   ``SecureURLRegistry`` (security-scoped bookmarks), Finder tags

@@ -35,38 +35,6 @@ class FileSystemTests: BinTestCase {
         Log.debug(tmp, tmpFreeSpace)
     }
 
-    @Test func parseSizeString() throws {
-        let size1 = try #require(
-            FileSystem.stringToByteCount("1 KB")
-        )
-        #expect(size1 == ByteCount.kilobyte.rawValue)
-
-        let size2 = try #require(
-            FileSystem.stringToByteCount("1 MB")
-        )
-        #expect(size2 == ByteCount.megabyte.rawValue)
-
-        let size3 = try #require(
-            FileSystem.stringToByteCount("1 GB")
-        )
-        #expect(size3 == ByteCount.gigabyte.rawValue)
-
-        let size4 = try #require(
-            FileSystem.stringToByteCount("1 TB")
-        )
-        #expect(size4 == ByteCount.terabyte.rawValue)
-
-        let size5 = try #require(
-            FileSystem.stringToByteCount("160.2 MB")
-        )
-        #expect(size5 == 167_981_875)
-
-        let size6 = try #require(
-            FileSystem.stringToByteCount("765.5 MB")
-        ).double
-        #expect(size6 == 765.5 * ByteCount.megabyte.rawValue.double)
-    }
-
     // seems to fail with [] - permissions?
     @Test func getFileURLs() throws {
         let directory = TestBundleResources.shared.resourcesDirectory
@@ -105,5 +73,34 @@ class FileSystemTests: BinTestCase {
             try next1.createDirectory()
             #expect(next1.lastPathComponent == "folder_\(number)")
         }
+    }
+
+    @Test func fileURLStream() async throws {
+        // Create some files in the bin directory
+        for i in 0 ..< 5 {
+            let url = bin.appendingPathComponent("file\(i).txt")
+            try Data("test".utf8).write(to: url)
+        }
+
+        // Create a subdirectory with more files
+        let subdir = bin.appendingPathComponent("subdir", conformingTo: .folder)
+        try subdir.createDirectory()
+
+        for i in 0 ..< 3 {
+            let url = subdir.appendingPathComponent("nested\(i).txt")
+            try Data("test".utf8).write(to: url)
+        }
+
+        // Collect async stream results
+        var streamURLs = [URL]()
+        for await url in FileSystem.fileURLStream(in: [bin]) {
+            streamURLs.append(url)
+        }
+
+        // Compare with synchronous version
+        let syncURLs = FileSystem.getFileURLs(in: [bin])
+
+        #expect(Set(streamURLs) == syncURLs)
+        #expect(streamURLs.count == 8)
     }
 }
