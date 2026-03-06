@@ -15,12 +15,11 @@ class FileSystemTests: BinTestCase {
         try volumes.forEach {
             // Free space on the volume - shouldn't be nil
             let freeSpace = try #require(
-                // will also check getSystemFreeSizeInBytes
-                FileSystem.getSystemFreeSizeDescription(forPath: $0.path)
+                FileSystem.freeSpaceDescription(forPath: $0.path)
             )
 
             let totalSpace = try #require(
-                FileSystem.getSystemSizeDescription(forPath: $0.path)
+                FileSystem.totalSpaceDescription(forPath: $0.path)
             )
 
             Log.debug($0.path, "\(freeSpace)/\(totalSpace)")
@@ -29,7 +28,7 @@ class FileSystemTests: BinTestCase {
         let tmp = FileManager.default.temporaryDirectory.path
 
         let tmpFreeSpace = try #require(
-            FileSystem.getSystemFreeSizeDescription(forPath: tmp)
+            FileSystem.freeSpaceDescription(forPath: tmp)
         )
 
         Log.debug(tmp, tmpFreeSpace)

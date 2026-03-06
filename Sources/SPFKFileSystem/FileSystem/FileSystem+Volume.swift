@@ -5,44 +5,44 @@ import Foundation
 extension FileSystem {
     // MARK: - Volume queries
 
-    /// How much free space is at this location
-    /// - Parameter path: The path to the location to check
-    /// - Returns: free space in bytes
-    public static func getSystemFreeSizeInBytes(forPath path: String = "/") -> UInt64? {
+    /// Returns the free space in bytes at the given file system path.
+    /// - Parameter path: The file system path to check. Defaults to `"/"`.
+    /// - Returns: Free space in bytes, or `nil` if attributes cannot be read.
+    public static func freeSpace(forPath path: String = "/") -> UInt64? {
         guard let attributes = try? FileManager.default
             .attributesOfFileSystem(forPath: path) else { return nil }
 
-        let byteCount = attributes[FileAttributeKey.systemFreeSize] as? UInt64
-        return byteCount
+        return attributes[FileAttributeKey.systemFreeSize] as? UInt64
     }
 
-    /// Total size of the file system at the given path.
-    /// - Parameter path: The file system path to check.
+    /// Returns the total size in bytes of the file system at the given path.
+    /// - Parameter path: The file system path to check. Defaults to `"/"`.
     /// - Returns: Total size in bytes, or `nil` if attributes cannot be read.
-    public static func getSystemSizeInBytes(forPath path: String = "/") -> UInt64? {
+    public static func totalSpace(forPath path: String = "/") -> UInt64? {
         guard let attributes = try? FileManager.default
             .attributesOfFileSystem(forPath: path) else { return nil }
 
-        let byteCount = attributes[FileAttributeKey.systemSize] as? UInt64
-        return byteCount
+        return attributes[FileAttributeKey.systemSize] as? UInt64
     }
 
-    /// - Parameter path: The path to read from
-    /// - Returns: A readable string such as 1 MB
-    public static func getSystemFreeSizeDescription(forPath path: String = "/") -> String? {
-        guard let byteCount = getSystemFreeSizeInBytes(forPath: path)?.int64 else { return nil }
+    /// Returns a human-readable string describing the free space at the given path.
+    /// - Parameter path: The file system path to check. Defaults to `"/"`.
+    /// - Returns: A formatted string such as `"1 GB"`, or `nil` if unavailable.
+    public static func freeSpaceDescription(forPath path: String = "/") -> String? {
+        guard let byteCount = freeSpace(forPath: path)?.int64 else { return nil }
         return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
     }
 
-    /// - Parameter path: The path to read from
-    /// - Returns: A readable string such as 1 MB
-    public static func getSystemSizeDescription(forPath path: String = "/") -> String? {
-        guard let byteCount = getSystemSizeInBytes(forPath: path)?.int64 else { return nil }
+    /// Returns a human-readable string describing the total size at the given path.
+    /// - Parameter path: The file system path to check. Defaults to `"/"`.
+    /// - Returns: A formatted string such as `"500 GB"`, or `nil` if unavailable.
+    public static func totalSpaceDescription(forPath path: String = "/") -> String? {
+        guard let byteCount = totalSpace(forPath: path)?.int64 else { return nil }
         return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
     }
 
     /// Returns URLs of all currently mounted volumes.
-    public static func getMountedVolumes() -> [URL] {
+    public static func mountedVolumes() -> [URL] {
         let keys: [URLResourceKey] = [
             .volumeNameKey,
             .volumeIsBrowsableKey,
@@ -58,7 +58,7 @@ extension FileSystem {
     public static func volumeURL(forFileURL url: URL) -> URL? {
         let isExternal = url.pathComponents.contains("Volumes")
 
-        var volumes = getMountedVolumes()
+        var volumes = mountedVolumes()
 
         if isExternal {
             volumes = volumes.filter {

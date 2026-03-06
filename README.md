@@ -1,6 +1,6 @@
 # SPFKFileSystem
 
-Cross-platform file system utilities for Apple platforms — directory enumeration, recursive directory observation, byte count formatting, extended attributes, and macOS Finder tag management.
+Cross-platform file system utilities for Apple platforms — directory enumeration, recursive directory observation, extended attributes, and macOS Finder tag management.
 
 ## Requirements
 
@@ -31,7 +31,6 @@ Then add `SPFKFileSystem` to your target's dependencies:
 | Type / Extension | macOS | iOS |
 |---|:---:|:---:|
 | `FileSystem` | Y | Y |
-| `ByteCount` | Y | Y |
 | `DirectoryObserver` | Y | Y |
 | `DirectoryEnumerationObserver` | Y | Y |
 | `DirectoryEvent` | Y | Y |
@@ -82,11 +81,12 @@ await observer.stop()
 
 `FileSystem` provides static methods for common operations:
 
-- **Byte formatting** — `byteCountToString(_:)`, `stringToByteCount(_:)`
-- **Disk space** — `getSystemFreeSizeInBytes(forPath:)`, `getSystemSizeInBytes(forPath:)`
-- **Volumes** — `getMountedVolumes()`, `volumeURL(forFileURL:)`
-- **Directory enumeration** — `getFileURLs(in:...)`, `getDirectories(in:...)`, `getPackages(in:...)`
-- **Path utilities** — `nextAvailableURL(_:)`, `getQueryStringParameter(url:param:)`
+- **Disk space** — `freeSpace(forPath:)`, `totalSpace(forPath:)`, `freeSpaceDescription(forPath:)`, `totalSpaceDescription(forPath:)`
+- **Volumes** — `mountedVolumes()`, `volumeURL(forFileURL:)`
+- **File enumeration** — `enumerateFiles(in:...)`, `enumerateDirectories(in:...)`, `enumeratePackages(in:...)`
+- **Search** — `findDirectory(named:in:)`
+- **Streaming** — `fileURLStream(in:)`
+- **Path utilities** — `nextAvailableURL(_:)`
 - **Cleanup** — `deleteEmptyDirectories(in:)`
 
 ## Finder Tags (macOS)

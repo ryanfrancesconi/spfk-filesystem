@@ -8,7 +8,7 @@ import Foundation
 /// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
 ///
 /// Methods are organized into focused extensions:
-/// - ``getMountedVolumes()`` / ``volumeURL(forFileURL:)`` — volume queries
+/// - ``mountedVolumes()`` / ``volumeURL(forFileURL:)`` — volume queries
 /// - ``enumerateFiles(in:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` — file enumeration
 /// - ``deleteEmptyDirectories(in:)`` — cleanup
 /// - ``fileURLStream(in:)`` — async streaming enumeration
