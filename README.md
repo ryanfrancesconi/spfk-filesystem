@@ -109,13 +109,14 @@ try fileURL.removeAllTags()
 
 ## Security-Scoped Bookmarks (macOS)
 
-`SecureURLRegistry` manages `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` lifecycle for sandboxed apps:
+`SecureURLRegistry` manages `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` lifecycle for sandboxed apps. Duplicate access calls for the same URL are automatically deduplicated to prevent unbalanced reference counts.
 
 ```swift
 let registry = SecureURLRegistry()
 let (url, isStale) = try await registry.create(resolvingBookmarkData: bookmarkData)
 // ... use url ...
-await registry.releaseAll()  // call on app shutdown
+await registry.release(url: url)    // release individual URL when done
+await registry.releaseAll()         // or release all on app shutdown
 ```
 
 ## Dependencies

@@ -29,7 +29,12 @@
         /// Resolves bookmark data into a security-scoped URL and begins access.
         ///
         /// The resolved URL is tracked in ``active`` and will be released when ``releaseAll()``
-        /// is called. If the bookmark is stale, the URL is also added to ``stale``.
+        /// or ``release(url:)`` is called. If the bookmark is stale, the URL is also added
+        /// to ``stale``.
+        ///
+        /// If the resolved URL is already in ``active``, the method returns immediately
+        /// without calling `startAccessingSecurityScopedResource()` again, avoiding
+        /// unbalanced reference counts.
         ///
         /// - Parameter data: The security-scoped bookmark data to resolve.
         /// - Returns: A tuple of the resolved URL and whether the bookmark was stale.
@@ -49,6 +54,12 @@
                 stale.insert(url)
             }
 
+            // Skip if already accessing — each startAccessing call is reference-counted
+            // and must be balanced by a stopAccessing call.
+            if active.contains(url) {
+                return (url: url, isStale: isStale)
+            }
+
             guard url.startAccessingSecurityScopedResource() else {
                 errors.insert(url)
 
@@ -61,9 +72,35 @@
 
             active.insert(url)
 
-            // Log.debug("Accessing", url.path)
-
             return (url: url, isStale: isStale)
+        }
+
+        /// Releases security-scoped access for a single URL.
+        ///
+        /// If the URL is in ``active``, `stopAccessingSecurityScopedResource()` is called
+        /// and the URL is removed from all tracking sets. If the URL is not active, this
+        /// method is a no-op.
+        ///
+        /// Use this to release access when a playlist or document is closed, rather than
+        /// waiting for ``releaseAll()`` on app shutdown.
+        ///
+        /// - Parameter url: The URL to stop accessing.
+        public func release(url: URL) {
+            guard active.remove(url) != nil else { return }
+            url.stopAccessingSecurityScopedResource()
+            stale.remove(url)
+            errors.remove(url)
+        }
+
+        /// Releases security-scoped access for a collection of URLs.
+        ///
+        /// Convenience method that calls ``release(url:)`` for each URL in the collection.
+        ///
+        /// - Parameter urls: The URLs to stop accessing.
+        public func release(urls: some Collection<URL>) {
+            for url in urls {
+                release(url: url)
+            }
         }
 
         /// Releases all security-scoped URL access and clears all tracking sets.
