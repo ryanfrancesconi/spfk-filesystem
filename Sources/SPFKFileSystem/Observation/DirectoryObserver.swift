@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
 import Foundation
+import SPFKBase
 
 /// Low-level, single-directory file system observer using kqueue via `DispatchSource`.
 ///
@@ -73,7 +74,7 @@ public actor DirectoryObserver {
         self.eventMask = eventMask
 
         let initialContents = Self.contentsOfDirectory(at: url)
-        self.previousContents = initialContents
+        previousContents = initialContents
     }
 
     deinit {
@@ -245,13 +246,13 @@ extension DirectoryObserver: Equatable {
 }
 
 extension DirectoryObserver: Hashable {
-    nonisolated public func hash(into hasher: inout Hasher) {
+    public nonisolated func hash(into hasher: inout Hasher) {
         hasher.combine(url)
     }
 }
 
 extension DirectoryObserver: CustomStringConvertible {
-    nonisolated public var description: String {
+    public nonisolated var description: String {
         "DirectoryObserver(url: \"\(url.path)\")"
     }
 }

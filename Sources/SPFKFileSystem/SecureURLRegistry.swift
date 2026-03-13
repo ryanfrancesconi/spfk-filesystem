@@ -2,6 +2,7 @@
 
 #if os(macOS) && !targetEnvironment(macCatalyst)
     import Foundation
+    import SPFKBase
 
     /// Centralized registry for managing security-scoped URL access in sandboxed macOS apps.
     ///

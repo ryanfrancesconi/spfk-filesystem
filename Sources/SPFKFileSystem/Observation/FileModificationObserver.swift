@@ -3,6 +3,7 @@
 #if os(macOS)
     import CoreServices
     import Foundation
+    import SPFKBase
 
     /// Delegate protocol for receiving file modification events from ``FileModificationObserver``.
     public protocol FileModificationObserverDelegate: AnyObject, Sendable {
@@ -83,8 +84,8 @@
             self.delegate = delegate
             self.latency = latency
             self.coalescingInterval = coalescingInterval
-            self.modificationDates = trackedFiles
-            self.directoryIndex = Self.buildDirectoryIndex(from: trackedFiles)
+            modificationDates = trackedFiles
+            directoryIndex = Self.buildDirectoryIndex(from: trackedFiles)
         }
 
         /// Starts observing the parent directories of tracked files for changes.
@@ -99,7 +100,7 @@
             guard directoryIndex.isNotEmpty else { return }
 
             let context = CallbackContext(self)
-            self.callbackContext = context
+            callbackContext = context
 
             var fsContext = FSEventStreamContext(
                 version: 0,
@@ -149,7 +150,7 @@
             FSEventStreamRelease(stream)
 
             self.stream = nil
-            self.callbackContext = nil
+            callbackContext = nil
 
             coalescingTask?.cancel()
             coalescingTask = nil
@@ -215,7 +216,6 @@
         /// The C function pointer callback for FSEventStream.
         private static let fsEventCallback: FSEventStreamCallback = {
             _, info, numEvents, eventPaths, eventFlags, _ in
-
             guard let info else { return }
 
             let context = Unmanaged<CallbackContext>.fromOpaque(info).takeUnretainedValue()
@@ -297,11 +297,11 @@
 
                 guard let self else { return }
 
-                let urls = await self.flushPending()
+                let urls = await flushPending()
 
                 guard !urls.isEmpty else { return }
 
-                await self.delegate?.fileModificationObserver(didDetectModifications: urls)
+                await delegate?.fileModificationObserver(didDetectModifications: urls)
             }
         }
 
@@ -315,7 +315,7 @@
     // MARK: - CustomStringConvertible
 
     extension FileModificationObserver: CustomStringConvertible {
-        nonisolated public var description: String {
+        public nonisolated var description: String {
             "FileModificationObserver"
         }
     }

@@ -3,6 +3,7 @@
 #if os(macOS)
     import CoreServices
     import Foundation
+    import SPFKBase
 
     /// macOS-only recursive directory observer using the CoreServices FSEvents API.
     ///
@@ -77,7 +78,7 @@
             self.url = url
             self.delegate = delegate
             self.latency = latency
-            self.previousSnapshot = Self.recursiveContents(of: url)
+            previousSnapshot = Self.recursiveContents(of: url)
         }
 
         /// Starts observing the directory tree for file system changes.
@@ -91,7 +92,7 @@
             guard stream == nil else { return }
 
             let context = CallbackContext(self)
-            self.callbackContext = context
+            callbackContext = context
 
             var fsContext = FSEventStreamContext(
                 version: 0,
@@ -140,7 +141,7 @@
             FSEventStreamRelease(stream)
 
             self.stream = nil
-            self.callbackContext = nil
+            callbackContext = nil
 
             coalescingTask?.cancel()
             coalescingTask = nil
@@ -165,7 +166,6 @@
         /// The C function pointer callback for FSEventStream.
         private static let fsEventCallback: FSEventStreamCallback = {
             _, info, numEvents, eventPaths, eventFlags, _ in
-
             guard let info else { return }
 
             let context = Unmanaged<CallbackContext>.fromOpaque(info).takeUnretainedValue()
@@ -216,11 +216,11 @@
 
                 guard let self else { return }
 
-                let events = await self.flushQueue()
+                let events = await flushQueue()
 
                 guard !events.isEmpty else { return }
 
-                try await self.delegate?.directoryUpdated(events: events)
+                try await delegate?.directoryUpdated(events: events)
             }
         }
 
@@ -253,7 +253,7 @@
     // MARK: - CustomStringConvertible
 
     extension FSEventsDirectoryObserver: CustomStringConvertible {
-        nonisolated public var description: String {
+        public nonisolated var description: String {
             "FSEventsDirectoryObserver(url: \"\(url.path)\")"
         }
     }

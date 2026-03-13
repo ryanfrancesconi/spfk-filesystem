@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
 import Foundation
+import SPFKBase
 
 /// Internal actor that coordinates multiple ``DirectoryObserver`` instances for recursive
 /// directory monitoring via kqueue.

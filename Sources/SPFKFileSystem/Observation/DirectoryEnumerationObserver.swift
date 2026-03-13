@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
 import Foundation
+import SPFKBase
 
 /// Cross-platform recursive directory observer using kqueue-based ``DirectoryObserver`` instances.
 ///
