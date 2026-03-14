@@ -1,5 +1,6 @@
 #if os(macOS)
     import Foundation
+    import SPFKBase
     import SPFKFileSystem
     import SPFKTesting
     import Testing

@@ -2,6 +2,7 @@
 
 #if os(macOS) && !targetEnvironment(macCatalyst)
     import Foundation
+import SPFKBase
     @testable import SPFKFileSystem
     import SPFKTesting
     import Testing

@@ -1,6 +1,7 @@
 #if canImport(AppKit) && !targetEnvironment(macCatalyst)
     import AppKit
     import Foundation
+import SPFKBase
     @testable import SPFKFileSystem
     import SPFKTesting
     import Testing
