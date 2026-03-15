@@ -53,13 +53,13 @@ final class DirectoryObserverTests: BinTestCase {
         let urls = TestBundleResources.shared.formats
         let newFiles = try copyToBin(urls: urls)
 
-        try await wait(sec: 1)
+        try await wait(sec: 2)
 
         let addedCount = await testDelegate.added.count
         #expect(addedCount == urls.count)
 
         try newFiles.first?.delete()
-        try await wait(sec: 1)
+        try await wait(sec: 2)
 
         let removedCount = await testDelegate.removed.count
         #expect(removedCount == 1)
@@ -68,7 +68,7 @@ final class DirectoryObserverTests: BinTestCase {
             try? newFile.delete()
         }
 
-        try await wait(sec: 1)
+        try await wait(sec: 2)
 
         let finalRemovedCount = await testDelegate.removed.count
         #expect(finalRemovedCount == urls.count)

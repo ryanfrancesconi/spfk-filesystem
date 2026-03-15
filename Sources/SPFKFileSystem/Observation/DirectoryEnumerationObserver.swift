@@ -28,6 +28,20 @@ import SPFKBase
 /// await observer.stop()
 /// ```
 ///
+/// ## Event Delivery Latency
+///
+/// Events pass through several stages before reaching the delegate, each adding latency:
+///
+/// 1. **kqueue notification** — kernel delivers the initial directory-change signal (near-instant).
+/// 2. **Stabilization polling** — ``DirectoryObserver`` polls file sizes every 0.25 s until they
+///    are stable for 1 consecutive check (~0.25–0.5 s).
+/// 3. **Event debounce** — ``ObservationData`` collects events from all subdirectory observers
+///    and coalesces them over a 0.3 s window before delivering a batch.
+///
+/// **Typical total latency: ~0.8–1.0 s** from filesystem change to delegate callback.
+/// When many files are written concurrently, stabilization may take additional poll cycles.
+/// Tests observing this class should allow at least 2 s for events to arrive.
+///
 /// ## Platform Comparison
 ///
 /// | | `DirectoryEnumerationObserver` | `FSEventsDirectoryObserver` |
