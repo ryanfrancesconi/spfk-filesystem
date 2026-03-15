@@ -1,12 +1,12 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
-#if canImport(AppKit) && !targetEnvironment(macCatalyst)
+#if os(macOS)
     import AppKit
     import Foundation
 
     /// A collection of Finder tags (color labels and/or custom text tags) attached to a file.
     ///
-    /// **macOS only** (`#if canImport(AppKit) && !targetEnvironment(macCatalyst)`).
+    /// **macOS only** (`#if os(macOS)`).
     ///
     /// Use ``init(url:)`` to read a file's current tags, or construct a group manually
     /// and write it with ``URL/set(finderTags:)``. The ``defaultTags`` static provides

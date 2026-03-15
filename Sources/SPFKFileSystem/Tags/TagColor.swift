@@ -1,6 +1,6 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-filesystem
 
-#if canImport(AppKit) && !targetEnvironment(macCatalyst)
+#if os(macOS)
     import AppKit
     import Foundation
     import SPFKBase
@@ -10,7 +10,7 @@
 
     /// The 7 built-in macOS Finder label colors plus `.none`.
     ///
-    /// **macOS only** (`#if canImport(AppKit) && !targetEnvironment(macCatalyst)`).
+    /// **macOS only** (`#if os(macOS)`).
     ///
     /// Raw values match the Finder's internal label indices (0–7). The ``dataElement`` property
     /// produces the string format stored in the `com.apple.metadata:_kMDItemUserTags` extended
