@@ -29,6 +29,24 @@
         /// The xattr key for Finder user tags.
         static let userTagsKey = "com.apple.metadata:_kMDItemUserTags"
 
+        /// The legacy Finder label color for this file, if any.
+        ///
+        /// macOS maintains a separate per-file label index (0–7) stored via
+        /// `URLResourceKey.labelNumberKey`. Finder displays this label even
+        /// when the `_kMDItemUserTags` xattr doesn't include it. Returns
+        /// `nil` when the label is `.none` (0) or unreadable.
+        var legacyLabelColor: TagColor? {
+            guard let resourceValues = try? resourceValues(forKeys: [.labelNumberKey]),
+                  let labelNumber = resourceValues.labelNumber,
+                  let tagColor = TagColor(rawValue: labelNumber),
+                  tagColor != .none
+            else {
+                return nil
+            }
+
+            return tagColor
+        }
+
         /// The raw tag name strings attached to this file URL.
         ///
         /// Color tags appear in `"Color\nIndex"` format (e.g., `"Red\n6"`);
@@ -51,10 +69,17 @@
 
         /// The ``TagColor`` values derived from this file's tags.
         ///
-        /// Only tags that match a known color label (via ``TagColor/init(label:)``)
-        /// are included; custom text-only tags are omitted.
+        /// Includes colors from the `_kMDItemUserTags` xattr and the legacy
+        /// Finder label (``legacyLabelColor``). The legacy label is appended
+        /// only when it isn't already present in the xattr colors.
         public var tagColors: [TagColor] {
-            tagNames.compactMap { TagColor(label: $0) }
+            var colors = tagNames.compactMap { TagColor(label: $0) }
+
+            if let legacy = legacyLabelColor, !colors.contains(legacy) {
+                colors.append(legacy)
+            }
+
+            return colors
         }
 
         /// All Finder tags on this file as ``FinderTagDescription`` values.
@@ -63,8 +88,12 @@
         /// match a known ``TagColor`` are created via
         /// ``FinderTagDescription/init(tagColor:)``, while unrecognised strings
         /// become text-only descriptions via ``FinderTagDescription/init(label:)``.
+        ///
+        /// The legacy Finder label (``legacyLabelColor``) is included when it
+        /// isn't already present among the xattr-derived color tags.
         public var finderTags: [FinderTagDescription] {
             var tags = [FinderTagDescription]()
+            var colorsSeen = Set<TagColor>()
 
             for string in tagNames {
                 guard let tagColor = TagColor(label: string) else {
@@ -76,6 +105,14 @@
 
                 tags.insert(
                     FinderTagDescription(tagColor: tagColor)
+                )
+                colorsSeen.insert(tagColor)
+            }
+
+            // Include legacy Finder label if not already present from xattr tags
+            if let legacy = legacyLabelColor, !colorsSeen.contains(legacy) {
+                tags.insert(
+                    FinderTagDescription(tagColor: legacy)
                 )
             }
 
@@ -124,10 +161,10 @@
             try set(tagNames: colors + textTags)
         }
 
-        /// Removes all Finder tags from this file.
+        /// Removes all Finder tags from this file, including the legacy label.
         ///
-        /// Writes an empty property-list array to the `_kMDItemUserTags` xattr
-        /// and updates the file's modification date.
+        /// Clears the `_kMDItemUserTags` xattr and resets the legacy Finder
+        /// label (`labelNumberKey`) to 0 (none).
         public func removeAllTags() throws {
             let empty: [String] = []
 
@@ -135,6 +172,18 @@
                 name: Self.userTagsKey,
                 value: empty.propertyListData()
             )
+
+            try removeLegacyLabel()
+        }
+
+        /// Resets the legacy Finder label to none (0).
+        ///
+        /// Sets `URLResourceKey.labelNumberKey` to 0 via `setResourceValues`.
+        public func removeLegacyLabel() throws {
+            var url = self
+            var resourceValues = URLResourceValues()
+            resourceValues.labelNumber = 0
+            try url.setResourceValues(resourceValues)
         }
     }
 
