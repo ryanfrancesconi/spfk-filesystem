@@ -11,7 +11,7 @@
     /// Use ``init(url:)`` to read a file's current tags, or construct a group manually
     /// and write it with ``URL/set(finderTags:)``. The ``defaultTags`` static provides
     /// all 8 built-in macOS label colors as a convenience.
-    public struct FinderTagGroup: Hashable, Sendable, Codable {
+    public struct FinderTagGroup: Hashable, Sendable {
         /// All 8 built-in macOS label colors (none through orange).
         public static let defaultTags: FinderTagGroup = .init(
             tags: TagColor.allCases.map {
@@ -20,7 +20,7 @@
         )
 
         /// The individual tag descriptions in this group.
-        public var tags: [FinderTagDescription] = .init()
+        public internal(set) var tags: [FinderTagDescription] = .init()
 
         /// Comma-separated string of all tag labels.
         public var stringValue: String {
@@ -64,6 +64,7 @@
 
         public init(tags: [FinderTagDescription]) {
             self.tags = tags
+            sort()
         }
 
         /// Replaces all color tags with the given descriptions, preserving text-only tags.
@@ -72,12 +73,36 @@
             let colors = colors.filter { $0.tagColor != .none }
 
             tags = tags.union(colors)
+            sort()
         }
 
         /// Replaces all color tags, keeping text-only tags and appending the new colors.
         public mutating func update(colors: [FinderTagDescription]) {
             tags = tags.filter { $0.tagColor == .none }
             tags += colors
+            sort()
+        }
+
+        private mutating func sort() {
+            tags = tags.sorted()
+        }
+    }
+
+    extension FinderTagGroup: Codable {
+        enum CodingKeys: String, CodingKey {
+            case tags
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            tags = try container.decode([FinderTagDescription].self, forKey: .tags)
+
+            sort()
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(tags, forKey: .tags)
         }
     }
 
