@@ -11,7 +11,7 @@
     /// Use ``init(url:)`` to read a file's current tags, or construct a group manually
     /// and write it with ``URL/set(finderTags:)``. The ``defaultTags`` static provides
     /// all 8 built-in macOS label colors as a convenience.
-    public struct FinderTagGroup: Hashable, Sendable {
+    public struct FinderTagGroup: Hashable, Sendable, Codable {
         /// All 8 built-in macOS label colors (none through orange).
         public static let defaultTags: FinderTagGroup = .init(
             tags: TagColor.allCases.map {
@@ -78,51 +78,6 @@
         public mutating func update(colors: [FinderTagDescription]) {
             tags = tags.filter { $0.tagColor == .none }
             tags += colors
-        }
-    }
-
-    extension FinderTagGroup: Codable {
-        enum CodingKeys: String, CodingKey {
-            // Encode tags as parallel primitive arrays so SwiftData's
-            // KVC-based encoder never walks into FinderTagDescription
-            // structs (which it can mangle into NSDictionary on the
-            // background persistence thread, crashing at
-            // encoder.container(keyedBy:)).
-            case tagColors
-            case labels
-            // Legacy key for reading old data that encoded
-            // [FinderTagDescription] directly.
-            case tags
-        }
-
-        public init(from decoder: any Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-
-            // Try new parallel-array format first
-            if let colorValues = try? container.decodeIfPresent([Int].self, forKey: .tagColors),
-               let labelValues = try? container.decodeIfPresent([String].self, forKey: .labels),
-               colorValues.count == labelValues.count
-            {
-                tags = zip(colorValues, labelValues).map { colorRaw, label in
-                    let tagColor = TagColor(rawValue: colorRaw) ?? .none
-                    if tagColor == .none {
-                        return FinderTagDescription(label: label)
-                    } else {
-                        return FinderTagDescription(tagColor: tagColor)
-                    }
-                }
-            } else if let legacyTags = try? container.decodeIfPresent([FinderTagDescription].self, forKey: .tags) {
-                // Fall back to legacy [FinderTagDescription] format
-                tags = legacyTags
-            } else {
-                tags = []
-            }
-        }
-
-        public func encode(to encoder: any Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(tags.map(\.tagColor.rawValue), forKey: .tagColors)
-            try container.encode(tags.map(\.label), forKey: .labels)
         }
     }
 

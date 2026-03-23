@@ -13,7 +13,7 @@
     ///
     /// Read tags from a file URL via ``URL/finderTags``, or write them with
     /// ``URL/set(finderTags:)``.
-    public struct FinderTagDescription: Hashable, Equatable, Sendable, Comparable {
+    public struct FinderTagDescription: Hashable, Equatable, Sendable, Comparable, Codable {
         public static func < (lhs: FinderTagDescription, rhs: FinderTagDescription) -> Bool {
             lhs.label.standardCompare(with: rhs.label)
         }
@@ -36,25 +36,6 @@
         public init(label: String) {
             tagColor = TagColor.none
             self.label = label
-        }
-    }
-
-    extension FinderTagDescription: Codable {
-        enum CodingKeys: String, CodingKey {
-            case tagColor
-            case label
-        }
-
-        public init(from decoder: any Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            tagColor = try container.decode(TagColor.self, forKey: .tagColor)
-            label = try container.decode(String.self, forKey: .label)
-        }
-
-        public func encode(to encoder: any Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(tagColor, forKey: .tagColor)
-            try container.encode(label, forKey: .label)
         }
     }
 

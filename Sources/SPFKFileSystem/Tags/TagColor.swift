@@ -3,7 +3,6 @@
 #if os(macOS)
     import AppKit
     import Foundation
-    import RawCodable
     import SPFKBase
     import XAttr
 
@@ -20,8 +19,7 @@
     ///
     /// Initialize from a display name with ``init(name:)`` or from the xattr data element
     /// string with ``init(label:)``.
-    @RawCodable
-    public enum TagColor: Int, Hashable, CaseIterable, Comparable, Sendable {
+    public enum TagColor: Int, Hashable, CaseIterable, Comparable, Sendable, Codable {
         public static func < (lhs: TagColor, rhs: TagColor) -> Bool {
             lhs.name.standardCompare(with: rhs.name)
         }
