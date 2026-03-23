@@ -2,6 +2,7 @@
 
 #if os(macOS)
     import Foundation
+    import SPFKBase
 
     // https://developer.apple.com/documentation/coreservices/file_metadata/mditem/common_metadata_attribute_keys
 

@@ -15,7 +15,7 @@
     /// ``URL/set(finderTags:)``.
     public struct FinderTagDescription: Hashable, Equatable, Sendable, Comparable, Codable {
         public static func < (lhs: FinderTagDescription, rhs: FinderTagDescription) -> Bool {
-            lhs.label.standardCompare(with: rhs.label)
+            lhs.tagColor < rhs.tagColor
         }
 
         /// The color label for this tag, or `.none` for custom text-only tags.
