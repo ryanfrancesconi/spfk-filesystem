@@ -70,9 +70,11 @@
             let data = try JSONEncoder().encode(group)
             let decoded = try JSONDecoder().decode(FinderTagGroup.self, from: data)
             #expect(decoded.tags.count == 3)
-            #expect(decoded.tags[0].tagColor == .red)
+            
+            // sort order
+            #expect(decoded.tags[0].tagColor == .green)
             #expect(decoded.tags[1].tagColor == .blue)
-            #expect(decoded.tags[2].tagColor == .green)
+            #expect(decoded.tags[2].tagColor == .red)
         }
 
         @Test func encodeDecodeGroupWithTextTag() throws {
@@ -83,8 +85,10 @@
             let data = try JSONEncoder().encode(group)
             let decoded = try JSONDecoder().decode(FinderTagGroup.self, from: data)
             #expect(decoded.tags.count == 2)
-            #expect(decoded.tags[1].tagColor == .none)
-            #expect(decoded.tags[1].label == "CustomText")
+
+            // none (rawValue 0) sorts before red (rawValue 6)
+            #expect(decoded.tags[0].tagColor == .none)
+            #expect(decoded.tags[0].label == "CustomText")
         }
 
         @Test func multipleRoundTripsPreserveTags() throws {
@@ -99,8 +103,9 @@
             }
 
             #expect(group.tags.count == 2)
-            #expect(group.tags[0].tagColor == .red)
-            #expect(group.tags[1].label == "TextTag")
+            // none (rawValue 0) sorts before red (rawValue 6)
+            #expect(group.tags[0].label == "TextTag")
+            #expect(group.tags[1].tagColor == .red)
         }
 
         // MARK: - defaultTags
@@ -126,7 +131,7 @@
                 FinderTagDescription(tagColor: .red),
                 FinderTagDescription(tagColor: .blue),
             ])
-            #expect(group.stringValue == "Red, Blue")
+            #expect(group.stringValue == "Blue, Red")
         }
 
         @Test func stringValueIncludesTextTagLabel() {
@@ -134,7 +139,7 @@
                 FinderTagDescription(tagColor: .red),
                 FinderTagDescription(label: "Custom"),
             ])
-            #expect(group.stringValue == "Red, Custom")
+            #expect(group.stringValue == "Custom, Red")
         }
 
         @Test func stringValueCustomTextTagOnly() {
@@ -182,7 +187,7 @@
                 FinderTagDescription(tagColor: .red),
                 FinderTagDescription(tagColor: .blue),
             ])
-            #expect(group.tagColors == [.red, .blue])
+            #expect(group.tagColors == [.blue, .red])
         }
 
         @Test func tagColorsExcludesTextTags() {
@@ -191,7 +196,7 @@
                 FinderTagDescription(label: "CustomText"),
                 FinderTagDescription(tagColor: .green),
             ])
-            #expect(group.tagColors == [.red, .green])
+            #expect(group.tagColors == [.green, .red])
         }
 
         @Test func tagColorsEmptyForEmptyGroup() {
@@ -215,7 +220,7 @@
                 FinderTagDescription(tagColor: .blue),
                 FinderTagDescription(label: "CustomText"),
             ])
-            #expect(group.labels() == ["Red", "Blue"])
+            #expect(group.labels() == ["Blue", "Red"])
         }
 
         @Test func labelsEmptyWhenOnlyTextTags() {

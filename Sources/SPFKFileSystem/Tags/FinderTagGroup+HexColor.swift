@@ -35,7 +35,7 @@
         ///
         /// Removes any existing hex-color text tags first, then appends
         /// a new one if `hexColor` is non-nil.
-        public mutating func setHexColorTag(_ hexColor: HexColor?) {
+        public mutating func updateCustom(hexColor: HexColor?) {
             // Remove existing hex color text tags
             tags.removeAll { $0.tagColor == .none && HexColor(string: $0.label) != nil }
 
