@@ -27,21 +27,19 @@
         /// URLs where `startAccessingSecurityScopedResource()` returned `false`.
         public private(set) var errors = Set<URL>()
 
-        /// Resolves bookmark data into a security-scoped URL and begins access.
+        /// Resolves bookmark data into a security-scoped URL without starting access.
         ///
-        /// The resolved URL is tracked in ``active`` and will be released when ``releaseAll()``
-        /// or ``release(url:)`` is called. If the bookmark is stale, the URL is also added
-        /// to ``stale``.
+        /// This is `nonisolated` so it can run concurrently across multiple callers
+        /// without hopping to the actor's executor. The underlying system call
+        /// (`URL(resolvingBookmarkData:options:bookmarkDataIsStale:)`) is thread-safe.
         ///
-        /// If the resolved URL is already in ``active``, the method returns immediately
-        /// without calling `startAccessingSecurityScopedResource()` again, avoiding
-        /// unbalanced reference counts.
+        /// Call ``startAccessing(url:isStale:)`` afterward to begin security-scoped
+        /// access and register the URL with this registry.
         ///
         /// - Parameter data: The security-scoped bookmark data to resolve.
         /// - Returns: A tuple of the resolved URL and whether the bookmark was stale.
-        /// - Throws: If the bookmark cannot be resolved or access cannot be started.
-        @discardableResult
-        public func create(resolvingBookmarkData data: Data) throws -> (url: URL, isStale: Bool) {
+        /// - Throws: If the bookmark cannot be resolved.
+        public nonisolated func resolveBookmark(_ data: Data) throws -> (url: URL, isStale: Bool) {
             var isStale = false
 
             let url = try URL(
@@ -50,6 +48,19 @@
                 bookmarkDataIsStale: &isStale
             )
 
+            return (url: url, isStale: isStale)
+        }
+
+        /// Begins security-scoped access for a previously resolved URL and registers it.
+        ///
+        /// If the URL is already in ``active``, returns immediately without calling
+        /// `startAccessingSecurityScopedResource()` again — avoiding unbalanced reference counts.
+        ///
+        /// - Parameters:
+        ///   - url: The resolved URL from ``resolveBookmark(_:)``.
+        ///   - isStale: Whether the bookmark was stale.
+        /// - Throws: If `startAccessingSecurityScopedResource()` returns `false`.
+        public func startAccessing(url: URL, isStale: Bool) throws {
             if isStale {
                 Log.error("bookmark for \(url.path) is stale")
                 stale.insert(url)
@@ -58,7 +69,7 @@
             // Skip if already accessing — each startAccessing call is reference-counted
             // and must be balanced by a stopAccessing call.
             if active.contains(url) {
-                return (url: url, isStale: isStale)
+                return
             }
 
             guard url.startAccessingSecurityScopedResource() else {
@@ -72,8 +83,31 @@
             }
 
             active.insert(url)
+        }
 
-            return (url: url, isStale: isStale)
+        /// Begins security-scoped access for a batch of previously resolved URLs in a single actor hop.
+        ///
+        /// Equivalent to calling ``startAccessing(url:isStale:)`` for each item, but avoids
+        /// per-item actor hop overhead for large batches.
+        ///
+        /// - Parameter resolved: Array of `(url, isStale)` tuples from ``resolveBookmark(_:)``.
+        /// - Throws: If any URL fails `startAccessingSecurityScopedResource()`. The error
+        ///   identifies the failing URL; all prior URLs in the batch will have been started.
+        public func startAccessing(resolved: [(url: URL, isStale: Bool)]) throws {
+            for item in resolved {
+                try startAccessing(url: item.url, isStale: item.isStale)
+            }
+        }
+
+        /// Resolves bookmark data into a security-scoped URL and begins access.
+        ///
+        /// Convenience that calls ``resolveBookmark(_:)`` then ``startAccessing(url:isStale:)``.
+        /// For bulk operations, call those two methods separately to allow concurrent resolution.
+        @discardableResult
+        public func create(resolvingBookmarkData data: Data) throws -> (url: URL, isStale: Bool) {
+            let result = try resolveBookmark(data)
+            try startAccessing(url: result.url, isStale: result.isStale)
+            return result
         }
 
         /// Releases security-scoped access for a single URL.

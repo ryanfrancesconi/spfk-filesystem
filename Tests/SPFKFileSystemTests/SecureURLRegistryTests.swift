@@ -2,7 +2,7 @@
 
 #if os(macOS) && !targetEnvironment(macCatalyst)
     import Foundation
-import SPFKBase
+    import SPFKBase
     @testable import SPFKFileSystem
     import SPFKTesting
     import Testing
@@ -38,6 +38,75 @@ import SPFKBase
             await #expect(throws: (any Error).self) {
                 try await registry.create(resolvingBookmarkData: bogusData)
             }
+        }
+
+        // MARK: - resolveBookmark
+
+        @Test func resolveBookmarkReturnsURL() throws {
+            let registry = SecureURLRegistry()
+            let url = try createTempFile()
+            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
+
+            let result = try registry.resolveBookmark(bookmarkData)
+
+            #expect(result.url.resolvingSymlinksInPath() == url.resolvingSymlinksInPath())
+            #expect(result.isStale == false)
+        }
+
+        @Test func resolveBookmarkWithInvalidDataThrows() throws {
+            let registry = SecureURLRegistry()
+            let bogusData = Data("not a bookmark".utf8)
+
+            #expect(throws: (any Error).self) {
+                try registry.resolveBookmark(bogusData)
+            }
+        }
+
+        // MARK: - startAccessing
+
+        @Test func startAccessingAddsToActive() async throws {
+            let registry = SecureURLRegistry()
+            let url = try createTempFile()
+            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
+
+            let (resolvedURL, isStale) = try registry.resolveBookmark(bookmarkData)
+            try await registry.startAccessing(url: resolvedURL, isStale: isStale)
+
+            let active = await registry.active
+            #expect(active.contains(resolvedURL))
+        }
+
+        @Test func startAccessingDeduplicates() async throws {
+            let registry = SecureURLRegistry()
+            let url = try createTempFile()
+            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
+
+            let (resolvedURL, isStale) = try registry.resolveBookmark(bookmarkData)
+            try await registry.startAccessing(url: resolvedURL, isStale: isStale)
+            try await registry.startAccessing(url: resolvedURL, isStale: isStale)
+
+            let active = await registry.active
+            #expect(active.count == 1)
+        }
+
+        @Test func resolveBookmarkThenStartAccessingMatchesCreate() async throws {
+            let registry = SecureURLRegistry()
+            let url = try createTempFile()
+            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
+
+            let (resolvedURL, isStale) = try registry.resolveBookmark(bookmarkData)
+            try await registry.startAccessing(url: resolvedURL, isStale: isStale)
+
+            let active = await registry.active
+            #expect(active.contains(resolvedURL))
+            #expect(active.count == 1)
+
+            // Verify this produces the same state as create()
+            await registry.release(url: resolvedURL)
+            let result = try await registry.create(resolvingBookmarkData: bookmarkData)
+            #expect(result.url.resolvingSymlinksInPath() == resolvedURL.resolvingSymlinksInPath())
+            let activeAfterCreate = await registry.active
+            #expect(activeAfterCreate.count == 1)
         }
 
         // MARK: - Duplicate access guard
