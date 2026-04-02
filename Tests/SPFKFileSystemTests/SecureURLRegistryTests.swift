@@ -229,6 +229,40 @@
             #expect(active.count == 1)
         }
 
+        // MARK: - startAccessing(resolved:)
+
+        @Test func startAccessingBatchRegistersAllURLs() async throws {
+            let registry = SecureURLRegistry()
+            let url1 = try createTempFile()
+            let url2 = try createTempFile()
+            let bookmark1 = try url1.bookmarkData(options: [.withSecurityScope])
+            let bookmark2 = try url2.bookmarkData(options: [.withSecurityScope])
+
+            let r1 = try registry.resolveBookmark(bookmark1)
+            let r2 = try registry.resolveBookmark(bookmark2)
+
+            await registry.startAccessing(resolved: [(r1.url, r1.isStale), (r2.url, r2.isStale)])
+
+            let active = await registry.active
+            #expect(active.contains(r1.url))
+            #expect(active.contains(r2.url))
+        }
+
+        @Test func startAccessingBatchIsIdempotentForAlreadyActiveURLs() async throws {
+            let registry = SecureURLRegistry()
+            let url = try createTempFile()
+            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
+            let r = try registry.resolveBookmark(bookmarkData)
+
+            // Register once manually, then register again via batch
+            try await registry.startAccessing(url: r.url, isStale: r.isStale)
+            await registry.startAccessing(resolved: [(r.url, r.isStale)])
+
+            let active = await registry.active
+            // Must still be exactly one entry — no double-registration
+            #expect(active.count == 1)
+        }
+
         // MARK: - Multiple URLs isolation
 
         @Test func releasingOneURLDoesNotAffectOthers() async throws {

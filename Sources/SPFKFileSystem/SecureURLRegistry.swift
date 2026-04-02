@@ -88,14 +88,17 @@
         /// Begins security-scoped access for a batch of previously resolved URLs in a single actor hop.
         ///
         /// Equivalent to calling ``startAccessing(url:isStale:)`` for each item, but avoids
-        /// per-item actor hop overhead for large batches.
+        /// per-item actor hop overhead for large batches. Failures are logged individually
+        /// and do not interrupt access for subsequent URLs in the batch.
         ///
         /// - Parameter resolved: Array of `(url, isStale)` tuples from ``resolveBookmark(_:)``.
-        /// - Throws: If any URL fails `startAccessingSecurityScopedResource()`. The error
-        ///   identifies the failing URL; all prior URLs in the batch will have been started.
-        public func startAccessing(resolved: [(url: URL, isStale: Bool)]) throws {
+        public func startAccessing(resolved: [(url: URL, isStale: Bool)]) {
             for item in resolved {
-                try startAccessing(url: item.url, isStale: item.isStale)
+                do {
+                    try startAccessing(url: item.url, isStale: item.isStale)
+                } catch {
+                    Log.error("startAccessing failed for \(item.url.lastPathComponent): \(error)")
+                }
             }
         }
 
