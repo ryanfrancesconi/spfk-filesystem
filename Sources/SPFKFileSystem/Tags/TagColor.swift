@@ -116,10 +116,8 @@
                     continue
                 }
 
-                let fileLabel = fileLabels[i]
-
-                guard let tagColor = TagColor(name: fileLabel) else {
-                    Log.error("Unknown label: \(fileLabel)") // shouldn't happen
+                guard let tagColor = TagColor(rawValue: i) else {
+                    Log.error("Unknown label index: \(i)") // shouldn't happen
                     continue
                 }
 
