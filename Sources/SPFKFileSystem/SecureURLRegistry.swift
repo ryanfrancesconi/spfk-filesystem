@@ -85,34 +85,6 @@
             active.insert(url)
         }
 
-        /// Begins security-scoped access for a batch of previously resolved URLs in a single actor hop.
-        ///
-        /// Equivalent to calling ``startAccessing(url:isStale:)`` for each item, but avoids
-        /// per-item actor hop overhead for large batches. Failures are logged individually
-        /// and do not interrupt access for subsequent URLs in the batch.
-        ///
-        /// - Parameter resolved: Array of `(url, isStale)` tuples from ``resolveBookmark(_:)``.
-        public func startAccessing(resolved: [(url: URL, isStale: Bool)]) {
-            for item in resolved {
-                do {
-                    try startAccessing(url: item.url, isStale: item.isStale)
-                } catch {
-                    Log.error("startAccessing failed for \(item.url.lastPathComponent): \(error)")
-                }
-            }
-        }
-
-        /// Resolves bookmark data into a security-scoped URL and begins access.
-        ///
-        /// Convenience that calls ``resolveBookmark(_:)`` then ``startAccessing(url:isStale:)``.
-        /// For bulk operations, call those two methods separately to allow concurrent resolution.
-        @discardableResult
-        public func create(resolvingBookmarkData data: Data) throws -> (url: URL, isStale: Bool) {
-            let result = try resolveBookmark(data)
-            try startAccessing(url: result.url, isStale: result.isStale)
-            return result
-        }
-
         /// Releases security-scoped access for a single URL.
         ///
         /// If the URL is in ``active``, `stopAccessingSecurityScopedResource()` is called
