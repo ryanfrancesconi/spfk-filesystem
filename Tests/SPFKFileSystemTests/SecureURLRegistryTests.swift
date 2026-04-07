@@ -14,32 +14,6 @@
     /// (active/stale/errors), duplicate-access guard, and release methods.
     @Suite(.serialized)
     final class SecureURLRegistryTests: BinTestCase, @unchecked Sendable {
-        // MARK: - create(resolvingBookmarkData:)
-
-        @Test func createResolvesBookmarkAndTracksActive() async throws {
-            let registry = SecureURLRegistry()
-            let url = try createTempFile()
-            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
-
-            let result = try await registry.create(resolvingBookmarkData: bookmarkData)
-
-            // Bookmark resolution may resolve symlinks (e.g., /var → /private/var)
-            #expect(result.url.resolvingSymlinksInPath() == url.resolvingSymlinksInPath())
-            #expect(result.isStale == false)
-
-            let active = await registry.active
-            #expect(active.contains(result.url))
-        }
-
-        @Test func createWithInvalidDataThrows() async throws {
-            let registry = SecureURLRegistry()
-            let bogusData = Data("not a bookmark".utf8)
-
-            await #expect(throws: (any Error).self) {
-                try await registry.create(resolvingBookmarkData: bogusData)
-            }
-        }
-
         // MARK: - resolveBookmark
 
         @Test func resolveBookmarkReturnsURL() throws {
@@ -89,44 +63,6 @@
             #expect(active.count == 1)
         }
 
-        @Test func resolveBookmarkThenStartAccessingMatchesCreate() async throws {
-            let registry = SecureURLRegistry()
-            let url = try createTempFile()
-            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
-
-            let (resolvedURL, isStale) = try registry.resolveBookmark(bookmarkData)
-            try await registry.startAccessing(url: resolvedURL, isStale: isStale)
-
-            let active = await registry.active
-            #expect(active.contains(resolvedURL))
-            #expect(active.count == 1)
-
-            // Verify this produces the same state as create()
-            await registry.release(url: resolvedURL)
-            let result = try await registry.create(resolvingBookmarkData: bookmarkData)
-            #expect(result.url.resolvingSymlinksInPath() == resolvedURL.resolvingSymlinksInPath())
-            let activeAfterCreate = await registry.active
-            #expect(activeAfterCreate.count == 1)
-        }
-
-        // MARK: - Duplicate access guard
-
-        @Test func duplicateCreateSkipsSecondStartAccess() async throws {
-            let registry = SecureURLRegistry()
-            let url = try createTempFile()
-            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
-
-            let result1 = try await registry.create(resolvingBookmarkData: bookmarkData)
-            let result2 = try await registry.create(resolvingBookmarkData: bookmarkData)
-
-            // Both should resolve to the same URL
-            #expect(result1.url.path == result2.url.path)
-
-            // Active set should contain exactly one entry for this URL
-            let active = await registry.active
-            #expect(active.count == 1)
-        }
-
         // MARK: - release(url:)
 
         @Test func releaseRemovesFromActive() async throws {
@@ -134,7 +70,9 @@
             let url = try createTempFile()
             let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
 
-            let result = try await registry.create(resolvingBookmarkData: bookmarkData)
+            let result = try registry.resolveBookmark(bookmarkData)
+            try await registry.startAccessing(url: result.url, isStale: result.isStale)
+
             var active = await registry.active
             #expect(active.contains(result.url))
 
@@ -144,11 +82,10 @@
             #expect(active.isEmpty)
         }
 
-        @Test func releaseNonActiveURLIsNoOp() async throws {
+        @Test func releaseNonActiveURLIsNoOp() async {
             let registry = SecureURLRegistry()
             let url = URL(fileURLWithPath: "/tmp/nonexistent-\(UUID().uuidString)")
 
-            // Should not crash or alter state
             await registry.release(url: url)
 
             let active = await registry.active
@@ -164,8 +101,10 @@
             let bookmark1 = try url1.bookmarkData(options: [.withSecurityScope])
             let bookmark2 = try url2.bookmarkData(options: [.withSecurityScope])
 
-            let result1 = try await registry.create(resolvingBookmarkData: bookmark1)
-            let result2 = try await registry.create(resolvingBookmarkData: bookmark2)
+            let result1 = try registry.resolveBookmark(bookmark1)
+            let result2 = try registry.resolveBookmark(bookmark2)
+            try await registry.startAccessing(url: result1.url, isStale: result1.isStale)
+            try await registry.startAccessing(url: result2.url, isStale: result2.isStale)
 
             var active = await registry.active
             #expect(active.count == 2)
@@ -184,8 +123,10 @@
             let bookmark1 = try url1.bookmarkData(options: [.withSecurityScope])
             let bookmark2 = try url2.bookmarkData(options: [.withSecurityScope])
 
-            try await registry.create(resolvingBookmarkData: bookmark1)
-            try await registry.create(resolvingBookmarkData: bookmark2)
+            let result1 = try registry.resolveBookmark(bookmark1)
+            let result2 = try registry.resolveBookmark(bookmark2)
+            try await registry.startAccessing(url: result1.url, isStale: result1.isStale)
+            try await registry.startAccessing(url: result2.url, isStale: result2.isStale)
 
             var active = await registry.active
             #expect(active.count == 2)
@@ -199,67 +140,33 @@
             #expect(errors.isEmpty)
         }
 
-        @Test func releaseAllOnEmptyRegistryIsNoOp() async throws {
+        @Test func releaseAllOnEmptyRegistryIsNoOp() async {
             let registry = SecureURLRegistry()
 
-            // Should not crash
             await registry.releaseAll()
 
             let active = await registry.active
             #expect(active.isEmpty)
         }
 
-        // MARK: - Re-create after release
+        // MARK: - Re-access after release
 
-        @Test func createAfterReleaseTracksAgain() async throws {
+        @Test func startAccessingAfterReleaseTracksAgain() async throws {
             let registry = SecureURLRegistry()
             let url = try createTempFile()
             let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
 
-            let result1 = try await registry.create(resolvingBookmarkData: bookmarkData)
-            await registry.release(url: result1.url)
+            let result = try registry.resolveBookmark(bookmarkData)
+            try await registry.startAccessing(url: result.url, isStale: result.isStale)
+            await registry.release(url: result.url)
 
             var active = await registry.active
             #expect(active.isEmpty)
 
-            // Re-creating should add it back to active
-            let result2 = try await registry.create(resolvingBookmarkData: bookmarkData)
+            // Re-accessing after release should add it back
+            try await registry.startAccessing(url: result.url, isStale: result.isStale)
             active = await registry.active
-            #expect(active.contains(result2.url))
-            #expect(active.count == 1)
-        }
-
-        // MARK: - startAccessing(resolved:)
-
-        @Test func startAccessingBatchRegistersAllURLs() async throws {
-            let registry = SecureURLRegistry()
-            let url1 = try createTempFile()
-            let url2 = try createTempFile()
-            let bookmark1 = try url1.bookmarkData(options: [.withSecurityScope])
-            let bookmark2 = try url2.bookmarkData(options: [.withSecurityScope])
-
-            let r1 = try registry.resolveBookmark(bookmark1)
-            let r2 = try registry.resolveBookmark(bookmark2)
-
-            await registry.startAccessing(resolved: [(r1.url, r1.isStale), (r2.url, r2.isStale)])
-
-            let active = await registry.active
-            #expect(active.contains(r1.url))
-            #expect(active.contains(r2.url))
-        }
-
-        @Test func startAccessingBatchIsIdempotentForAlreadyActiveURLs() async throws {
-            let registry = SecureURLRegistry()
-            let url = try createTempFile()
-            let bookmarkData = try url.bookmarkData(options: [.withSecurityScope])
-            let r = try registry.resolveBookmark(bookmarkData)
-
-            // Register once manually, then register again via batch
-            try await registry.startAccessing(url: r.url, isStale: r.isStale)
-            await registry.startAccessing(resolved: [(r.url, r.isStale)])
-
-            let active = await registry.active
-            // Must still be exactly one entry — no double-registration
+            #expect(active.contains(result.url))
             #expect(active.count == 1)
         }
 
@@ -272,8 +179,10 @@
             let bookmark1 = try url1.bookmarkData(options: [.withSecurityScope])
             let bookmark2 = try url2.bookmarkData(options: [.withSecurityScope])
 
-            let result1 = try await registry.create(resolvingBookmarkData: bookmark1)
-            let result2 = try await registry.create(resolvingBookmarkData: bookmark2)
+            let result1 = try registry.resolveBookmark(bookmark1)
+            let result2 = try registry.resolveBookmark(bookmark2)
+            try await registry.startAccessing(url: result1.url, isStale: result1.isStale)
+            try await registry.startAccessing(url: result2.url, isStale: result2.isStale)
 
             await registry.release(url: result1.url)
 
