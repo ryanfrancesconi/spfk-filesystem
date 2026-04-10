@@ -17,7 +17,7 @@
 
         @Test func asyncClosureReturnsValue() async {
             let url = URL(fileURLWithPath: "/tmp/security-scope-test")
-            let result = await url.withSecurityScopedAccess { 99 }
+            let result = url.withSecurityScopedAccess { 99 }
             #expect(result == 99)
         }
 
@@ -39,7 +39,7 @@
         @Test func asyncClosureBodyExecutes() async {
             let url = URL(fileURLWithPath: "/tmp/security-scope-test")
             var executed = false
-            await url.withSecurityScopedAccess { executed = true }
+            url.withSecurityScopedAccess { executed = true }
             #expect(executed)
         }
     }
