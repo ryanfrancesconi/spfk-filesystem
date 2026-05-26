@@ -58,7 +58,8 @@
         private var stream: FSEventStreamRef?
         private var callbackContext: CallbackContext?
         private var previousSnapshot: Set<URL>
-        private var eventQueue: Set<DirectoryEvent> = []
+        private var pendingAdded: Set<URL> = []
+        private var pendingRemoved: Set<URL> = []
         private var coalescingTask: Task<Void, Error>?
 
         /// Creates a new FSEvents-based directory observer.
@@ -145,7 +146,8 @@
 
             coalescingTask?.cancel()
             coalescingTask = nil
-            eventQueue.removeAll()
+            pendingAdded.removeAll()
+            pendingRemoved.removeAll()
 
             Log.debug("FSEventsDirectoryObserver stopped for \(url.path)")
         }
@@ -195,13 +197,13 @@
             let removed = previousSnapshot.subtracting(newSnapshot)
             previousSnapshot = newSnapshot
 
-            if !removed.isEmpty {
-                eventQueue.insert(.removed(files: removed, source: url))
-            }
+            // Accumulate with cancellation: a URL added then removed (e.g. atomic write
+            // temp file) cancels out and is never reported to the delegate.
+            pendingAdded.formUnion(added)
+            pendingAdded.subtract(removed)
 
-            if !added.isEmpty {
-                eventQueue.insert(.new(files: added, source: url))
-            }
+            pendingRemoved.formUnion(removed)
+            pendingRemoved.subtract(added)
 
             if !added.isEmpty || !removed.isEmpty {
                 scheduleFlush()
@@ -225,8 +227,18 @@
         }
 
         private func flushQueue() -> Set<DirectoryEvent> {
-            let events = eventQueue
-            eventQueue.removeAll()
+            var events = Set<DirectoryEvent>()
+
+            if !pendingAdded.isEmpty {
+                events.insert(.new(files: pendingAdded, source: url))
+                pendingAdded.removeAll()
+            }
+
+            if !pendingRemoved.isEmpty {
+                events.insert(.removed(files: pendingRemoved, source: url))
+                pendingRemoved.removeAll()
+            }
+
             return events
         }
 
