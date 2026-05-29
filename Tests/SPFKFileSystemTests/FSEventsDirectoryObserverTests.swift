@@ -33,18 +33,18 @@
         private let testDelegate = FSEventsTestDelegate()
 
         @Test func fileCreationDetected() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("fileCreation")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
 
-            // Create files directly to avoid test bundle resource issues
             let fileCount = 3
             for i in 0 ..< fileCount {
-                let fileURL = bin.appendingPathComponent("created_\(i).txt")
+                let fileURL = observeDir.appendingPathComponent("created_\(i).txt")
                 try "content \(i)".write(to: fileURL, atomically: true, encoding: .utf8)
             }
 
@@ -58,19 +58,18 @@
         }
 
         @Test func fileDeletionDetected() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("fileDeletion")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
-            // Pre-populate bin with a file
-            let fileURL = bin.appendingPathComponent("to_delete.txt")
+            let fileURL = observeDir.appendingPathComponent("to_delete.txt")
             try "content".write(to: fileURL, atomically: true, encoding: .utf8)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
 
-            // Delete the file
             try FileManager.default.removeItem(at: fileURL)
 
             try await wait(sec: 2)
@@ -83,16 +82,16 @@
         }
 
         @Test func subdirectoryFileDetected() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("subdirectory")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
 
-            // Create a subdirectory and write a file into it
-            let subdir = bin.appendingPathComponent("subdir")
+            let subdir = observeDir.appendingPathComponent("subdir")
             try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
 
             let fileURL = subdir.appendingPathComponent("nested.txt")
@@ -101,7 +100,6 @@
             try await wait(sec: 2)
 
             let addedCount = await testDelegate.added.count
-            // Should detect the subdirectory and/or the file within it
             #expect(addedCount >= 1, "Should detect file added in subdirectory")
 
             await observer.stop()
@@ -109,17 +107,17 @@
         }
 
         @Test func multipleRapidChangesCoalesced() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("rapidChanges")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
 
-            // Create multiple files rapidly
             for i in 0 ..< 5 {
-                let fileURL = bin.appendingPathComponent("rapid_\(i).txt")
+                let fileURL = observeDir.appendingPathComponent("rapid_\(i).txt")
                 try "content \(i)".write(to: fileURL, atomically: true, encoding: .utf8)
             }
 
@@ -133,18 +131,18 @@
         }
 
         @Test func stopPreventsNotifications() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("stopPrevents")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
             await observer.stop()
 
-            // Create files after stopping
             for i in 0 ..< 3 {
-                let fileURL = bin.appendingPathComponent("after_stop_\(i).txt")
+                let fileURL = observeDir.appendingPathComponent("after_stop_\(i).txt")
                 try "content".write(to: fileURL, atomically: true, encoding: .utf8)
             }
 
@@ -157,20 +155,19 @@
         }
 
         @Test func renameDetected() async throws {
-            #expect(bin.exists)
+            let observeDir = bin.appendingPathComponent("rename")
+            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
 
-            // Pre-populate with a file
-            let originalURL = bin.appendingPathComponent("original.txt")
+            let originalURL = observeDir.appendingPathComponent("original.txt")
             try "content".write(to: originalURL, atomically: true, encoding: .utf8)
 
             let observer = try FSEventsDirectoryObserver(
-                url: bin,
+                url: observeDir,
                 delegate: testDelegate
             )
             await observer.start()
 
-            // Rename the file
-            let renamedURL = bin.appendingPathComponent("renamed.txt")
+            let renamedURL = observeDir.appendingPathComponent("renamed.txt")
             try FileManager.default.moveItem(at: originalURL, to: renamedURL)
 
             try await wait(sec: 2)
@@ -178,7 +175,6 @@
             let addedCount = await testDelegate.added.count
             let removedCount = await testDelegate.removed.count
 
-            // Rename should appear as a remove + add
             #expect(removedCount >= 1, "Should detect removal of original file")
             #expect(addedCount >= 1, "Should detect addition of renamed file")
 
