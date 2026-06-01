@@ -30,16 +30,11 @@
 
     @Suite(.serialized)
     final class FSEventsDirectoryObserverTests: BinTestCase {
-        private let testDelegate = FSEventsTestDelegate()
-
         @Test func fileCreationDetected() async throws {
-            let observeDir = bin.appendingPathComponent("fileCreation")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
 
             let fileCount = 3
@@ -54,20 +49,16 @@
             #expect(addedCount == fileCount, "Should detect all added files")
 
             await observer.stop()
-            await testDelegate.reset()
         }
 
         @Test func fileDeletionDetected() async throws {
-            let observeDir = bin.appendingPathComponent("fileDeletion")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
             let fileURL = observeDir.appendingPathComponent("to_delete.txt")
             try "content".write(to: fileURL, atomically: true, encoding: .utf8)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
 
             try FileManager.default.removeItem(at: fileURL)
@@ -78,17 +69,13 @@
             #expect(removedCount >= 1, "Should detect deleted file")
 
             await observer.stop()
-            await testDelegate.reset()
         }
 
         @Test func subdirectoryFileDetected() async throws {
-            let observeDir = bin.appendingPathComponent("subdirectory")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
 
             let subdir = observeDir.appendingPathComponent("subdir")
@@ -103,17 +90,13 @@
             #expect(addedCount >= 1, "Should detect file added in subdirectory")
 
             await observer.stop()
-            await testDelegate.reset()
         }
 
         @Test func multipleRapidChangesCoalesced() async throws {
-            let observeDir = bin.appendingPathComponent("rapidChanges")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
 
             for i in 0 ..< 5 {
@@ -127,17 +110,13 @@
             #expect(addedCount == 5, "Should detect all rapidly created files")
 
             await observer.stop()
-            await testDelegate.reset()
         }
 
         @Test func stopPreventsNotifications() async throws {
-            let observeDir = bin.appendingPathComponent("stopPrevents")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
             await observer.stop()
 
@@ -150,21 +129,16 @@
 
             let addedCount = await testDelegate.added.count
             #expect(addedCount == 0, "No events should fire after stop()")
-
-            await testDelegate.reset()
         }
 
         @Test func renameDetected() async throws {
-            let observeDir = bin.appendingPathComponent("rename")
-            try FileManager.default.createDirectory(at: observeDir, withIntermediateDirectories: true)
+            let testDelegate = FSEventsTestDelegate()
+            let observeDir = createBin(suite: #function, in: bin)
 
             let originalURL = observeDir.appendingPathComponent("original.txt")
             try "content".write(to: originalURL, atomically: true, encoding: .utf8)
 
-            let observer = try FSEventsDirectoryObserver(
-                url: observeDir,
-                delegate: testDelegate
-            )
+            let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
 
             let renamedURL = observeDir.appendingPathComponent("renamed.txt")
@@ -179,7 +153,6 @@
             #expect(addedCount >= 1, "Should detect addition of renamed file")
 
             await observer.stop()
-            await testDelegate.reset()
         }
     }
 #endif

@@ -10,6 +10,8 @@ actor TestEnumerationDelegate: DirectoryEnumerationObserverDelegate {
     var removed = [URL]()
 
     func directoryUpdated(events: Set<DirectoryEvent>) async throws {
+        Log.debug(events)
+        
         for event in events {
             switch event {
             case let .new(files: files, source: _):
@@ -42,16 +44,17 @@ actor TestDirectoryDelegate: DirectoryObserverDelegate {
 
 @Suite(.serialized)
 final class DirectoryObserverTests: BinTestCase {
-    private let testDelegate = TestEnumerationDelegate()
-
     @Test func addAndRemoveFiles() async throws {
+        let testDelegate = TestEnumerationDelegate()
+
+        let bin = createBin(suite: #function, in: bin)
         #expect(bin.exists)
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
         try await observer.start()
 
         let urls = TestBundleResources.shared.formats
-        let newFiles = try copyToBin(urls: urls)
+        let newFiles = try copy(to: bin, urls: urls)
 
         try await wait(sec: 2)
 
@@ -78,6 +81,9 @@ final class DirectoryObserverTests: BinTestCase {
     }
 
     @Test func stopPreventsNotifications() async throws {
+        let testDelegate = TestEnumerationDelegate()
+        let bin = createBin(suite: #function, in: bin)
+
         #expect(bin.exists)
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
@@ -86,7 +92,7 @@ final class DirectoryObserverTests: BinTestCase {
 
         // Copy files after stopping — should not be detected
         let urls = TestBundleResources.shared.formats
-        _ = try copyToBin(urls: urls)
+        _ = try copy(to: bin, urls: urls)
 
         try await wait(sec: 1)
 
@@ -97,6 +103,9 @@ final class DirectoryObserverTests: BinTestCase {
     }
 
     @Test func doubleStartIsIdempotent() async throws {
+        let testDelegate = TestEnumerationDelegate()
+        let bin = createBin(suite: #function, in: bin)
+
         #expect(bin.exists)
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
@@ -104,7 +113,7 @@ final class DirectoryObserverTests: BinTestCase {
         try await observer.start() // should not throw or duplicate observers
 
         let urls = [TestBundleResources.shared.formats.first!]
-        _ = try copyToBin(urls: urls)
+        _ = try copy(to: bin, urls: urls)
 
         try await wait(sec: 1)
 
@@ -116,6 +125,9 @@ final class DirectoryObserverTests: BinTestCase {
     }
 
     @Test func subdirectoryObservation() async throws {
+        let testDelegate = TestEnumerationDelegate()
+        let bin = createBin(suite: #function, in: bin)
+
         #expect(bin.exists)
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
