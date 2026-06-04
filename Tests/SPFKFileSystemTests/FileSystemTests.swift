@@ -57,21 +57,14 @@ class FileSystemTests: BinTestCase {
         #expect(allDirs.count == 2)
     }
 
-    @Test("nextAvailableURL", .serialized, arguments: [1, 2, 3, 4, 5])
-    func nextAvailableURL(_ number: Int) async throws {
-        deleteBinOnExit = number == 5 // delete bin on last run but not before
-
+    @Test func nextAvailableURL() async throws {
         let url1 = bin.appendingPathComponent("folder", conformingTo: .folder)
+        try url1.createDirectory()
 
-        if !url1.exists {
-            try url1.createDirectory()
-        }
-
-        let next1 = FileSystem.nextAvailableURL(url1)
-
-        if !next1.exists {
-            try next1.createDirectory()
-            #expect(next1.lastPathComponent == "folder_\(number)")
+        for number in 1 ... 5 {
+            let next = FileSystem.nextAvailableURL(url1)
+            try next.createDirectory()
+            #expect(next.lastPathComponent == "folder_\(number)")
         }
     }
 
