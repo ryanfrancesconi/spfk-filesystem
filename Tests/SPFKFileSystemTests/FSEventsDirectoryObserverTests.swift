@@ -40,7 +40,7 @@
             let fileCount = 3
             for i in 0 ..< fileCount {
                 let fileURL = observeDir.appendingPathComponent("created_\(i).txt")
-                try "content \(i)".write(to: fileURL, atomically: true, encoding: .utf8)
+                try "content \(i)".write(to: fileURL, atomically: false, encoding: .utf8)
             }
 
             try await wait(sec: 2)
@@ -56,7 +56,7 @@
             let observeDir = createBin(suite: #function, in: bin)
 
             let fileURL = observeDir.appendingPathComponent("to_delete.txt")
-            try "content".write(to: fileURL, atomically: true, encoding: .utf8)
+            try "content".write(to: fileURL, atomically: false, encoding: .utf8)
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
@@ -82,7 +82,7 @@
             try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
 
             let fileURL = subdir.appendingPathComponent("nested.txt")
-            try "nested content".write(to: fileURL, atomically: true, encoding: .utf8)
+            try "nested content".write(to: fileURL, atomically: false, encoding: .utf8)
 
             try await wait(sec: 2)
 
@@ -101,7 +101,7 @@
 
             for i in 0 ..< 5 {
                 let fileURL = observeDir.appendingPathComponent("rapid_\(i).txt")
-                try "content \(i)".write(to: fileURL, atomically: true, encoding: .utf8)
+                try "content \(i)".write(to: fileURL, atomically: false, encoding: .utf8)
             }
 
             try await wait(sec: 2)
@@ -122,7 +122,7 @@
 
             for i in 0 ..< 3 {
                 let fileURL = observeDir.appendingPathComponent("after_stop_\(i).txt")
-                try "content".write(to: fileURL, atomically: true, encoding: .utf8)
+                try "content".write(to: fileURL, atomically: false, encoding: .utf8)
             }
 
             try await wait(sec: 1)
@@ -136,7 +136,7 @@
             let observeDir = createBin(suite: #function, in: bin)
 
             let originalURL = observeDir.appendingPathComponent("original.txt")
-            try "content".write(to: originalURL, atomically: true, encoding: .utf8)
+            try "content".write(to: originalURL, atomically: false, encoding: .utf8)
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
