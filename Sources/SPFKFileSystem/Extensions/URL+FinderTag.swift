@@ -162,6 +162,18 @@
             try set(tagNames: colors + textTags)
         }
 
+        /// Copies all Finder tags from this file to another URL.
+        ///
+        /// Transfers the raw `_kMDItemUserTags` xattr strings verbatim, preserving
+        /// both color labels and custom text tags without re-encoding. Does nothing
+        /// if the source has no tags.
+        /// - Parameter destination: The file URL to receive the tags.
+        public func copyFinderTags(to destination: URL) throws {
+            let names = tagNames
+            guard names.isNotEmpty else { return }
+            try destination.set(tagNames: names)
+        }
+
         /// Removes all Finder tags from this file, including the legacy label.
         ///
         /// Clears the `_kMDItemUserTags` xattr and resets the legacy Finder
