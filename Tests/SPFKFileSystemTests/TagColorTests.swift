@@ -9,7 +9,7 @@ import SPFKBase
     @Suite(.serialized)
     class TagColorTests: BinTestCase {
         @Test func tagColors() async throws {
-            deleteBinOnExit = false
+            deleteBinOnExit = true
             let url = try createFolder(named: #function)
 
             let tagColors: [TagColor] = [.red, .green, .orange, .yellow]
@@ -19,7 +19,7 @@ import SPFKBase
         }
 
         @Test func customTags() async throws {
-            deleteBinOnExit = false
+            deleteBinOnExit = true
             let url = try createFolder(named: #function)
 
             let tagNames = ["Hello1", "Hello2", TagColor.none.dataElement]
@@ -29,7 +29,7 @@ import SPFKBase
         }
 
         @Test func removeAllTags() async throws {
-            deleteBinOnExit = false
+            deleteBinOnExit = true
             let url = try createFolder(named: #function)
 
             let tagColors: [TagColor] = [.red, .green, .orange, .yellow]
@@ -42,7 +42,7 @@ import SPFKBase
         }
 
         @Test func tagColorsOnArray() async throws {
-            deleteBinOnExit = false
+            deleteBinOnExit = true
             let url = try createFolder(named: #function)
 
             for i in 1 ..< 10 {
