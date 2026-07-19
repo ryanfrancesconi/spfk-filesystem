@@ -1,5 +1,7 @@
 # SPFKFileSystem
 
+[![CI](https://github.com/ryanfrancesconi/spfk-filesystem/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/ryanfrancesconi/spfk-filesystem/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/ryanfrancesconi/spfk-filesystem)](https://github.com/ryanfrancesconi/spfk-filesystem/tags)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 
