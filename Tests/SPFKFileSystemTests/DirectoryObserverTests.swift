@@ -42,7 +42,7 @@ actor TestDirectoryDelegate: DirectoryObserverDelegate {
     }
 }
 
-@Suite(.serialized)
+@Suite
 final class DirectoryObserverTests: BinTestCase {
     @Test func addAndRemoveFiles() async throws {
         let testDelegate = TestEnumerationDelegate()

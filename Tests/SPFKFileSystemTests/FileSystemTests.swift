@@ -4,7 +4,7 @@ import SPFKFileSystem
 import SPFKTesting
 import Testing
 
-@Suite(.serialized)
+@Suite
 class FileSystemTests: BinTestCase {
     // just prints values to the log
     @Test func fileSystemFreeSpace() throws {

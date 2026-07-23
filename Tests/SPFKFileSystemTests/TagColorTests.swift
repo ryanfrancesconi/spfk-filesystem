@@ -6,7 +6,7 @@ import SPFKBase
     import SPFKTesting
     import Testing
 
-    @Suite(.serialized)
+    @Suite
     class TagColorTests: BinTestCase {
         @Test func tagColors() async throws {
             deleteBinOnExit = true

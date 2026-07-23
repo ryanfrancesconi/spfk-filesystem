@@ -4,7 +4,7 @@ import SPFKFileSystem
 import SPFKTesting
 import Testing
 
-@Suite(.serialized)
+@Suite
 final class DirectoryObserverActorTests: BinTestCase, @unchecked Sendable {
     @Test func invalidURLThrows() async throws {
         let fileURL = bin.appendingPathComponent("not_a_directory.txt")

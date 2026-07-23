@@ -28,7 +28,7 @@
         }
     }
 
-    @Suite(.serialized)
+    @Suite
     final class FSEventsDirectoryObserverTests: BinTestCase {
         @Test func fileCreationDetected() async throws {
             let testDelegate = FSEventsTestDelegate()

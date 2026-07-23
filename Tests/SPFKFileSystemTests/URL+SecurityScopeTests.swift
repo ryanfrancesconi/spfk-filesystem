@@ -7,7 +7,7 @@
     import SPFKTesting
     import Testing
 
-    @Suite(.serialized)
+    @Suite
     struct URLSecurityScopeTests {
         @Test func syncClosureReturnsValue() {
             let url = URL(fileURLWithPath: "/tmp/security-scope-test")
