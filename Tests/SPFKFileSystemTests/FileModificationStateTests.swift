@@ -20,14 +20,23 @@
 
         // MARK: - Real file system behavior
 
-        /// Writes an extended attribute the way an external process does -- a bare `setxattr`,
-        /// with no modification-date bump. This is what Finder does when the user tags a file.
-        private func setTagsExternally(on url: URL, to value: String) {
-            let data = Data(value.utf8)
+        /// Writes Finder tags the way an external process does: a binary plist array in the
+        /// `_kMDItemUserTags` xattr via a bare `setxattr`, with no modification-date bump. That
+        /// last part is the difference from `URL.set(tagNames:)` and the whole point here.
+        private func setTagsExternally(on url: URL, to tagNames: [String]) throws {
+            let data = try PropertyListSerialization.data(
+                fromPropertyList: tagNames,
+                format: .binary,
+                options: 0
+            )
             let result = data.withUnsafeBytes { buffer in
                 setxattr(url.path, "com.apple.metadata:_kMDItemUserTags", buffer.baseAddress, buffer.count, 0, 0)
             }
             #expect(result == 0)
+
+            // Guard the guard: if the write format were wrong, the date would still move and the
+            // classification test would pass while testing nothing about Finder tags.
+            #expect(url.tagNames == tagNames)
         }
 
         /// The whole reason this type exists. An external Finder tag edit writes an extended
@@ -41,7 +50,7 @@
 
             let before = FileModificationState(url: url)
 
-            setTagsExternally(on: url, to: "Red")
+            try setTagsExternally(on: url, to: [TagColor.red.dataElement])
 
             let after = FileModificationState(url: url)
 
