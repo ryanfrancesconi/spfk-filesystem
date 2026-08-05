@@ -8,8 +8,11 @@
     /// Delegate protocol for receiving file modification events from ``FileModificationObserver``.
     public protocol FileModificationObserverDelegate: AnyObject, Sendable {
         /// Called when one or more tracked files have been externally modified.
-        /// - Parameter urls: The set of file URLs whose modification dates changed.
-        func fileModificationObserver(didDetectModifications urls: Set<URL>) async
+        /// - Parameter modifications: Each changed file URL and what kind of change it was. Handle
+        ///   ``FileModificationKind/attributes`` by refreshing only what lives in the file's
+        ///   attributes (Finder tags); a full re-read is only warranted for
+        ///   ``FileModificationKind/content``.
+        func fileModificationObserver(didDetectModifications modifications: [URL: FileModificationKind]) async
     }
 
     /// Monitors a set of known file URLs for external modifications by watching their parent
@@ -38,13 +41,16 @@
     ///
     /// ```swift
     /// let observer = FileModificationObserver(
-    ///     trackedFiles: playlist.trackedFileModificationDates,
+    ///     trackedFiles: playlist.trackedFileModificationState,
     ///     delegate: self
     /// )
     /// await observer.start()
     /// // ... events delivered via delegate.fileModificationObserver(didDetectModifications:) ...
     /// await observer.stop()
     /// ```
+    ///
+    /// Each reported change is classified as content or attributes-only (see
+    /// ``FileModificationKind``), so a Finder tag edit doesn't cost the same as a rewritten file.
     public actor FileModificationObserver {
         /// The delegate receiving modification events.
         public weak var delegate: FileModificationObserverDelegate?
@@ -58,11 +64,13 @@
         /// Maps directory URL → set of tracked file URLs in that directory.
         private var directoryIndex: [URL: Set<URL>]
 
-        /// Maps file URL → last known modification date.
-        private var modificationDates: [URL: Date]
+        /// Maps file URL → last known modification dates, kept separate so a change can be
+        /// classified rather than merely detected. See ``FileModificationState``.
+        private var modificationStates: [URL: FileModificationState]
 
-        /// Coalescing state.
-        private var pendingModifications: Set<URL> = []
+        /// Coalescing state. A file that changes twice before the flush keeps the more severe
+        /// classification -- an attribute write following a content write must not downgrade it.
+        private var pendingModifications: [URL: FileModificationKind] = [:]
         private var coalescingTask: Task<Void, Error>?
         private let coalescingInterval: TimeInterval
 
@@ -71,12 +79,14 @@
 
         /// Creates a new file modification observer.
         /// - Parameters:
-        ///   - trackedFiles: A mapping of file URLs to their last-known modification dates.
+        ///   - trackedFiles: A mapping of file URLs to their last-known modification state. Seed
+        ///     this from what was persisted alongside each file rather than from disk, so a change
+        ///     made while the app was closed is caught on the first event.
         ///   - delegate: The delegate to receive modification events.
         ///   - latency: The FSEvents stream latency in seconds. Default is 0.3.
         ///   - coalescingInterval: How long to coalesce modifications before delivery. Default is 0.5.
         public init(
-            trackedFiles: [URL: Date],
+            trackedFiles: [URL: FileModificationState],
             delegate: FileModificationObserverDelegate,
             latency: CFTimeInterval = 0.3,
             coalescingInterval: TimeInterval = 0.5
@@ -84,8 +94,8 @@
             self.delegate = delegate
             self.latency = latency
             self.coalescingInterval = coalescingInterval
-            modificationDates = trackedFiles
-            directoryIndex = Self.buildDirectoryIndex(from: trackedFiles)
+            modificationStates = trackedFiles
+            directoryIndex = Self.buildDirectoryIndex(from: Set(trackedFiles.keys))
         }
 
         /// Starts observing the parent directories of tracked files for changes.
@@ -171,11 +181,11 @@
 
         /// Updates the set of tracked files. Restarts the stream if the set of monitored
         /// directories changes.
-        /// - Parameter newFiles: The new mapping of file URLs to modification dates.
-        public func updateTrackedFiles(_ newFiles: [URL: Date]) {
+        /// - Parameter newFiles: The new mapping of file URLs to modification state.
+        public func updateTrackedFiles(_ newFiles: [URL: FileModificationState]) {
             let oldDirs = Set(directoryIndex.keys)
-            modificationDates = newFiles
-            directoryIndex = Self.buildDirectoryIndex(from: newFiles)
+            modificationStates = newFiles
+            directoryIndex = Self.buildDirectoryIndex(from: Set(newFiles.keys))
             let newDirs = Set(directoryIndex.keys)
 
             if oldDirs != newDirs {
@@ -189,10 +199,10 @@
 
     extension FileModificationObserver {
         /// Groups file URLs by their parent directory.
-        static func buildDirectoryIndex(from trackedFiles: [URL: Date]) -> [URL: Set<URL>] {
+        static func buildDirectoryIndex(from trackedFiles: Set<URL>) -> [URL: Set<URL>] {
             var index = [URL: Set<URL>]()
 
-            for url in trackedFiles.keys {
+            for url in trackedFiles {
                 let dir = url.deletingLastPathComponent()
                 index[dir, default: []].insert(url)
             }
@@ -270,16 +280,21 @@
                 guard let trackedFiles = directoryIndex[dir] else { continue }
 
                 for fileURL in trackedFiles {
-                    guard let cachedDate = modificationDates[fileURL],
-                          let currentDate = fileURL.modificationDate,
-                          currentDate != cachedDate
-                    else {
-                        continue
+                    guard let cachedState = modificationStates[fileURL] else { continue }
+
+                    let currentState = FileModificationState(url: fileURL)
+
+                    guard let kind = cachedState.change(to: currentState) else { continue }
+
+                    // Update cached state and record the modification. A content change already
+                    // implies re-reading everything, so it must not be overwritten by an
+                    // attribute change arriving in the same coalescing window.
+                    modificationStates[fileURL] = currentState
+
+                    if pendingModifications[fileURL] != .content {
+                        pendingModifications[fileURL] = kind
                     }
 
-                    // Update cached date and record the modification
-                    modificationDates[fileURL] = currentDate
-                    pendingModifications.insert(fileURL)
                     foundModifications = true
                 }
             }
@@ -297,18 +312,18 @@
 
                 guard let self else { return }
 
-                let urls = await flushPending()
+                let modifications = await flushPending()
 
-                guard !urls.isEmpty else { return }
+                guard !modifications.isEmpty else { return }
 
-                await delegate?.fileModificationObserver(didDetectModifications: urls)
+                await delegate?.fileModificationObserver(didDetectModifications: modifications)
             }
         }
 
-        private func flushPending() -> Set<URL> {
-            let urls = pendingModifications
+        private func flushPending() -> [URL: FileModificationKind] {
+            let modifications = pendingModifications
             pendingModifications.removeAll()
-            return urls
+            return modifications
         }
     }
 
