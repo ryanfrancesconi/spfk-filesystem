@@ -59,13 +59,22 @@
         }
 
         /// Reads both dates from disk. Returns empty dates for a file that cannot be reached.
+        ///
+        /// One `resourceValues` call for both keys, not two: a catch-up scan builds one of these
+        /// per element, so at album size the difference is tens of thousands of syscalls. The
+        /// cached values are dropped first because `URL` memoizes them, and a stale read is the
+        /// one thing this type must never do.
         public init(url: URL) {
             var uncached = url
             uncached.removeCachedResourceValue(forKey: .contentModificationDateKey)
             uncached.removeCachedResourceValue(forKey: .attributeModificationDateKey)
 
-            contentModificationDate = uncached.contentModificationDate
-            attributeModificationDate = uncached.attributeModificationDate
+            let values = try? uncached.resourceValues(
+                forKeys: [.contentModificationDateKey, .attributeModificationDateKey]
+            )
+
+            contentModificationDate = values?.contentModificationDate
+            attributeModificationDate = values?.attributeModificationDate
         }
 
         /// Classifies the change from `self` to `other`, or `nil` when nothing moved.
