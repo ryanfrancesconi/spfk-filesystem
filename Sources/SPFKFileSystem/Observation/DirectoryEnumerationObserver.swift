@@ -5,19 +5,11 @@ import SPFKBase
 
 /// Cross-platform recursive directory observer using kqueue-based ``DirectoryObserver`` instances.
 ///
-/// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
+/// One ``DirectoryObserver`` per subdirectory, extended and cleaned up as the tree changes, with
+/// events debounced into batches.
 ///
-/// This class performs a deep enumeration of the target directory and creates one
-/// ``DirectoryObserver`` per subdirectory, coordinated by ``ObservationData``. Events from
-/// all subdirectories are collected, debounced (0.3s), and delivered as a batch through the
-/// ``DirectoryEnumerationObserverDelegate`` protocol.
-///
-/// When new subdirectories are created, observation is automatically extended to them.
-/// When subdirectories are deleted, their observers are cleaned up.
-///
-/// > Warning: Exercise caution when observing large directory trees — each subdirectory
-/// > consumes one file descriptor and one `DispatchSource`. For large hierarchies on macOS,
-/// > prefer ``FSEventsDirectoryObserver`` which uses a single `FSEventStream`.
+/// > Warning: Each subdirectory costs a file descriptor and a `DispatchSource`. Prefer
+/// > ``FSEventsDirectoryObserver`` for a large tree — it uses one `FSEventStream`.
 ///
 /// ## Usage
 ///
@@ -51,10 +43,8 @@ import SPFKBase
 /// | Subdirectory handling | Manual (create/remove observers) | Automatic |
 /// | Event source URL | Per-subdirectory | Root URL only |
 public final class DirectoryEnumerationObserver: Sendable {
-    /// The root directory URL being observed.
     public let url: URL
 
-    /// The delegate receiving batched change events.
     public let delegate: DirectoryEnumerationObserverDelegate
 
     let storage: ObservationData
