@@ -23,13 +23,16 @@ extension FileSystem {
     ///   - url: The desired URL.
     ///   - delimiter: Separator before the number. Default is `"_"`.
     ///   - suffix: Optional suffix appended to the base name before numbering.
+    ///   - excluding: Names treated as taken even though nothing is on disk at them yet. A caller
+    ///     handing out several URLs before any is written passes what it has already given out.
     /// - Returns: The original URL if available, or the first non-conflicting numbered variant.
     public static func nextAvailableURL(
         _ url: URL,
         delimiter: String = "_",
-        suffix: String = ""
+        suffix: String = "",
+        excluding: Set<URL> = []
     ) -> URL {
-        guard url.exists else { return url } // no need to do anything
+        guard url.exists || excluding.contains(url) else { return url } // no need to do anything
 
         let isDirectory = url.isDirectory
         let parentDirectory = url.deletingLastPathComponent()
@@ -47,7 +50,7 @@ extension FileSystem {
                 .appendingPathExtension(pathExtension)
 
             // found an available numbered file
-            if !test.exists { return test }
+            if !test.exists, !excluding.contains(test) { return test }
         }
         return url
     }
