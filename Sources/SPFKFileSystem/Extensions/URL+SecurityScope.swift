@@ -26,8 +26,14 @@ extension URL {
     /// Security-scoped access is active from the point of `startAccessingSecurityScopedResource()`
     /// through the entire async body, including any suspension points. Access is released
     /// in the `defer` block when the function returns, regardless of suspension.
+    ///
+    /// Runs on the caller's actor rather than hopping off it, so a body touching isolated state
+    /// stays legal — an actor calling this would otherwise be sending a non-`Sendable` closure.
     @discardableResult
-    public func withSecurityScopedAccess<T>(_ body: () async throws -> T) async rethrows -> T {
+    public func withSecurityScopedAccess<T>(
+        isolation: isolated (any Actor)? = #isolation,
+        _ body: () async throws -> T
+    ) async rethrows -> T {
         let accessed = startAccessingSecurityScopedResource()
         defer { if accessed { stopAccessingSecurityScopedResource() } }
         return try await body()
