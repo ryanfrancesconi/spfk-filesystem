@@ -93,6 +93,25 @@
             #expect(before.change(to: after) == .content)
         }
 
+        /// Rewriting a file in place with the *same* length still reports. A modification date
+        /// records when the data stream was written, not whether the bytes ended up different --
+        /// so an edit that leaves size and duration alone, like a fade rendered in place, moves it
+        /// like any other write.
+        @Test func aSameLengthRewriteReportsAContentChange() throws {
+            deleteBinOnExit = true
+            let url = try createFile(named: #function)
+
+            let before = FileModificationState(url: url)
+            let originalSize = url.fileSize
+
+            try Data("INITIAL".utf8).write(to: url)
+
+            let after = FileModificationState(url: url)
+
+            #expect(url.fileSize == originalSize)
+            #expect(before.change(to: after) == .content)
+        }
+
         @Test func anUntouchedFileReportsNoChange() throws {
             deleteBinOnExit = true
             let url = try createFile(named: #function)
@@ -129,6 +148,59 @@
             // ...but an unclassifiable state that still compares equal is not a change at all,
             // or every event would report every file.
             #expect(unknown.change(to: unknown) == nil)
+        }
+
+        /// A write moves a date forward, so a disk date *older* than the recorded one cannot be an
+        /// edit that happened after we looked. Measured 2026-08-14 on four files whose sizes were
+        /// byte-identical and whose disk dates sat 965 s behind what was recorded -- every one of
+        /// them reported as a rewrite.
+        @Test func aDateThatMovedBackwardsIsNotAChange() {
+            let recorded = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 804_543_992.017),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 804_543_992.017)
+            )
+
+            // The same file, 965 s earlier on disk, and a much later attribute touch.
+            let current = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 804_543_026.477),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 806_191_765.392)
+            )
+
+            #expect(recorded.change(to: current) == .attributes)
+        }
+
+        /// The same rule at the other end of the scale. Measured 2026-08-14 on two volumes:
+        /// recorded dates landed 18.8 µs and 23 µs *later* than the same files' dates read back
+        /// from disk, which reported a rewrite on every comparison thereafter.
+        @Test func aMicrosecondBackwardsDifferenceIsNotAChange() {
+            let recorded = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507955),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507955)
+            )
+
+            let current = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507725),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507725)
+            )
+
+            #expect(recorded.change(to: current) == nil)
+        }
+
+        /// The direction rule must not become a tolerance: a write that lands microseconds later
+        /// is still a write. Back-to-back file operations are well under a millisecond apart, so a
+        /// window wide enough to absorb the artifact above would hide real ones.
+        @Test func aMicrosecondForwardDifferenceIsAChange() {
+            let recorded = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507725),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507725)
+            )
+
+            let current = FileModificationState(
+                contentModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507955),
+                attributeModificationDate: Date(timeIntervalSinceReferenceDate: 805_388_173.1507955)
+            )
+
+            #expect(recorded.change(to: current) == .content)
         }
 
         /// A record written before the split carries `max(content, attribute)` in the content

@@ -81,24 +81,46 @@
         ///
         /// A content change wins over a simultaneous attribute change: re-reading the file covers
         /// both, whereas refreshing attributes alone would leave stale parsed data behind.
+        ///
+        /// **A date is a change only when it moves forward.** A write advances it, so a disk date
+        /// *older* than what was recorded cannot be an edit that happened after we looked -- and
+        /// answering it with ``FileModificationKind/content`` reparses a file nobody touched.
+        /// Measured 2026-08-14 on five files whose sizes were byte-identical: four sat 965 s behind
+        /// their recorded date, one 23 µs behind.
+        ///
+        /// Strictly forward, with no tolerance around it. A window wide enough to cover that 23 µs
+        /// also swallows a real write: writing a file and re-reading it takes well under a
+        /// millisecond, which three of this file's own tests demonstrate.
+        ///
+        /// The trade is a rewrite that lands an *older* date than the last one seen -- a restore
+        /// from backup with dates preserved -- which goes unreported. A date comparison cannot
+        /// catch that in either direction.
         public func change(to other: FileModificationState) -> FileModificationKind? {
             guard isClassifiable else {
                 return collapsedChange(to: other)
             }
 
             guard other.isClassifiable else {
-                return modificationDate == other.modificationDate ? nil : .content
+                return Self.advanced(from: modificationDate, to: other.modificationDate) ? .content : nil
             }
 
-            if contentModificationDate != other.contentModificationDate {
+            if Self.advanced(from: contentModificationDate, to: other.contentModificationDate) {
                 return .content
             }
 
-            if attributeModificationDate != other.attributeModificationDate {
+            if Self.advanced(from: attributeModificationDate, to: other.attributeModificationDate) {
                 return .attributes
             }
 
             return nil
+        }
+
+        /// Whether `later` is after `earlier`. Unknown dates cannot be compared, and report no
+        /// movement rather than guessing at one.
+        private static func advanced(from earlier: Date?, to later: Date?) -> Bool {
+            guard let earlier, let later else { return false }
+
+            return later > earlier
         }
 
         /// Classifies against a record carrying only the collapsed date -- data written before the
@@ -117,16 +139,15 @@
         /// only. Nothing in a date comparison can catch that case either way.
         private func collapsedChange(to other: FileModificationState) -> FileModificationKind? {
             guard let recorded = modificationDate,
-                  let current = other.modificationDate
+                  let current = other.modificationDate,
+                  Self.advanced(from: recorded, to: current)
             else {
-                return modificationDate == other.modificationDate ? nil : .content
+                return nil
             }
-
-            if recorded == current { return nil }
 
             guard let currentContent = other.contentModificationDate else { return .content }
 
-            return currentContent > recorded ? .content : .attributes
+            return Self.advanced(from: recorded, to: currentContent) ? .content : .attributes
         }
     }
 #endif
