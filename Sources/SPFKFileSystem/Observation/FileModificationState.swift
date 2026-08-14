@@ -80,11 +80,13 @@
         /// Classifies the change from `self` to `other`, or `nil` when nothing moved.
         ///
         /// A content change wins over a simultaneous attribute change: re-reading the file covers
-        /// both, whereas refreshing attributes alone would leave stale parsed data behind. When
-        /// either state can't be classified, any difference reports as
-        /// ``FileModificationKind/content`` for the same reason.
+        /// both, whereas refreshing attributes alone would leave stale parsed data behind.
         public func change(to other: FileModificationState) -> FileModificationKind? {
-            guard isClassifiable, other.isClassifiable else {
+            guard isClassifiable else {
+                return collapsedChange(to: other)
+            }
+
+            guard other.isClassifiable else {
                 return modificationDate == other.modificationDate ? nil : .content
             }
 
@@ -97,6 +99,34 @@
             }
 
             return nil
+        }
+
+        /// Classifies against a record carrying only the collapsed date -- data written before the
+        /// split, seeded into ``contentModificationDate`` with no attribute side.
+        ///
+        /// The collapsed value is `max(content, attribute)`, so it is an **upper bound** on the
+        /// content date at the time it was recorded: a content date that is no newer than it
+        /// cannot have advanced since, and the difference can only be attributes. Measured
+        /// 2026-08-13: copying a file sets its attribute date 18-37 µs after its content date, so
+        /// the collapsed value of any copied file is its attribute date, and answering every later
+        /// difference with ``FileModificationKind/content`` reported a full rewrite for every one
+        /// of them the first time anything touched an extended attribute.
+        ///
+        /// The trade is a content rewrite that lands a modification date *older* than what was
+        /// recorded -- a restore from backup with dates preserved -- which reads as attributes
+        /// only. Nothing in a date comparison can catch that case either way.
+        private func collapsedChange(to other: FileModificationState) -> FileModificationKind? {
+            guard let recorded = modificationDate,
+                  let current = other.modificationDate
+            else {
+                return modificationDate == other.modificationDate ? nil : .content
+            }
+
+            if recorded == current { return nil }
+
+            guard let currentContent = other.contentModificationDate else { return .content }
+
+            return currentContent > recorded ? .content : .attributes
         }
     }
 #endif

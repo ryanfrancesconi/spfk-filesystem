@@ -131,6 +131,48 @@
             #expect(unknown.change(to: unknown) == nil)
         }
 
+        /// A record written before the split carries `max(content, attribute)` in the content
+        /// slot. On a copied file that is the *attribute* date -- measured on
+        /// `airplane_flyby.wav`, whose content date is `.009266` and whose recorded collapsed
+        /// value was `.0092849`, 18.8 µs later. A later Finder tag write must not turn that
+        /// 18.8 µs into a reported rewrite of the whole file.
+        @Test func aCollapsedRecordReadsALaterAttributeWriteAsAttributes() {
+            let content = Date(timeIntervalSinceReferenceDate: 787_971_844.009266)
+            let collapsed = Date(timeIntervalSinceReferenceDate: 787_971_844.0092849)
+            let tagged = Date(timeIntervalSinceReferenceDate: 806_968_617.7240558)
+
+            let recorded = FileModificationState(contentModificationDate: collapsed, attributeModificationDate: nil)
+            let current = FileModificationState(contentModificationDate: content, attributeModificationDate: tagged)
+
+            #expect(!recorded.isClassifiable)
+            #expect(recorded.change(to: current) == .attributes)
+        }
+
+        /// The bound only holds downward: a content date *newer* than the collapsed value is a
+        /// rewrite that happened after the record was written, and still has to reparse.
+        @Test func aCollapsedRecordStillReportsARealRewrite() {
+            let collapsed = Date(timeIntervalSince1970: 1_000)
+            let rewritten = Date(timeIntervalSince1970: 2_000)
+
+            let recorded = FileModificationState(contentModificationDate: collapsed, attributeModificationDate: nil)
+            let current = FileModificationState(
+                contentModificationDate: rewritten,
+                attributeModificationDate: rewritten
+            )
+
+            #expect(recorded.change(to: current) == .content)
+        }
+
+        /// A file whose two dates were equal when collapsed, and which nothing has touched since.
+        @Test func aCollapsedRecordMatchingDiskIsNotAChange() {
+            let date = Date(timeIntervalSince1970: 1_000)
+
+            let recorded = FileModificationState(contentModificationDate: date, attributeModificationDate: nil)
+            let current = FileModificationState(contentModificationDate: date, attributeModificationDate: date)
+
+            #expect(recorded.change(to: current) == nil)
+        }
+
         /// `modificationDate` is what callers that don't care about the split read, and it has to
         /// stay the later of the two -- it replaced a stored property with exactly that meaning.
         @Test func modificationDateIsTheLaterOfTheTwo() {
