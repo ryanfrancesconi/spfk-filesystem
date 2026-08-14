@@ -138,8 +138,14 @@
         /// recorded -- a restore from backup with dates preserved -- which reads as attributes
         /// only. Nothing in a date comparison can catch that case either way.
         private func collapsedChange(to other: FileModificationState) -> FileModificationKind? {
-            guard let recorded = modificationDate,
-                  let current = other.modificationDate,
+            // No date at all is not a collapsed record -- it is nothing recorded, so nothing can be
+            // ruled out and the conservative answer is the only safe one. The upper-bound reasoning
+            // below needs a bound.
+            guard let recorded = modificationDate else {
+                return other.modificationDate != nil ? .content : nil
+            }
+
+            guard let current = other.modificationDate,
                   Self.advanced(from: recorded, to: current)
             else {
                 return nil

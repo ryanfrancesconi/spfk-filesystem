@@ -220,6 +220,20 @@
             #expect(recorded.change(to: current) == .attributes)
         }
 
+        /// A record with no dates at all is not a collapsed record -- it is nothing recorded, so
+        /// the upper-bound reasoning has no bound to work from and the answer has to be the
+        /// conservative one. `DisplayedFileContent` depends on this: an editor showing a file it
+        /// could read no dates for must rebuild rather than believe it is already current.
+        @Test func aRecordWithNoDatesAtAllReportsAContentChange() {
+            let empty = FileModificationState()
+            let known = FileModificationState(contentModificationDate: Date(timeIntervalSince1970: 100))
+
+            #expect(empty.change(to: known) == .content)
+
+            // ...but two empty states still compare equal, or every event reports every file.
+            #expect(empty.change(to: empty) == nil)
+        }
+
         /// The bound only holds downward: a content date *newer* than the collapsed value is a
         /// rewrite that happened after the record was written, and still has to reparse.
         @Test func aCollapsedRecordStillReportsARealRewrite() {
