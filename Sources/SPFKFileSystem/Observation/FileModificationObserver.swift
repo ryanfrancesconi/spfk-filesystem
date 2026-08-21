@@ -74,8 +74,8 @@
         private var coalescingTask: Task<Void, Error>?
         private let coalescingInterval: TimeInterval
 
-        /// When true, incoming FSEvents are ignored.
-        private var isSuppressed: Bool = false
+        /// Incoming FSEvents are ignored while this is above zero.
+        private var suppressionCount: Int = 0
 
         /// Creates a new file modification observer.
         /// - Parameters:
@@ -170,13 +170,22 @@
         }
 
         /// Suppresses event processing. Call before the app writes to tracked files.
+        ///
+        /// Nests: each call needs its own ``unsuppress()``.
         public func suppress() {
-            isSuppressed = true
+            suppressionCount += 1
         }
 
         /// Resumes event processing after suppression.
+        ///
+        /// Clamped at zero, so an unbalanced call cannot re-arm a region still open.
         public func unsuppress() {
-            isSuppressed = false
+            suppressionCount = max(0, suppressionCount - 1)
+        }
+
+        /// Whether events are currently being ignored.
+        var isSuppressed: Bool {
+            suppressionCount > 0
         }
 
         /// Updates the set of tracked files. Restarts the stream if the set of monitored
