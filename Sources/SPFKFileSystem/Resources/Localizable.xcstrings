@@ -1,6 +1,76 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "\"%@\" is locked. Unlock it to rename it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" ist gesperrt. Entsperren Sie die Datei, um sie umzubenennen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" is locked. Unlock it to rename it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" está bloqueado. Desbloquéalo para renombrarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » est verrouillé. Déverrouillez-le pour le renommer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" è bloccato. Sbloccalo per rinominarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」はロックされています。名前を変更するにはロックを解除してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\"은(는) 잠겨 있습니다. 이름을 바꾸려면 잠금을 해제하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" is vergrendeld. Ontgrendel het bestand om het te hernoemen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" está bloqueado. Desbloqueie-o para renomeá-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«%@» заблокирован. Разблокируйте файл, чтобы переименовать его."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”已锁定。请解锁以重命名。"
+          }
+        }
+      }
+    },
     "%@ could not be written" : {
       "localizations" : {
         "de" : {
@@ -281,6 +351,76 @@
         }
       }
     },
+    "An item named \"%@\" already exists in this location." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Objekt namens \"%@\" existiert an diesem Ort bereits."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An item named \"%@\" already exists in this location."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya existe un ítem con el nombre \"%@\" en esta ubicación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un élément nommé « %@ » existe déjà à cet emplacement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un elemento denominato \"%@\" esiste già in questa posizione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」という名前の項目はこの場所にすでに存在します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\"(이)라는 이름의 항목이 이 위치에 이미 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Er bestaat al een onderdeel met de naam \"%@\" op deze locatie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um item chamado \"%@\" já existe neste local."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Объект с именем «%@» уже существует в этом месте."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此位置已存在名为“%@”的项目。"
+          }
+        }
+      }
+    },
     "Locked" : {
       "localizations" : {
         "de" : {
@@ -487,6 +627,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "位于只读宗卷上"
+          }
+        }
+      }
+    },
+    "That name can't be used. Names cannot be empty or contain a slash." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Name kann nicht verwendet werden. Namen dürfen nicht leer sein und keinen Schrägstrich enthalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That name can't be used. Names cannot be empty or contain a slash."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese nombre no se puede usar. Los nombres no pueden estar vacíos ni contener una barra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce nom ne peut pas être utilisé. Les noms ne peuvent pas être vides ni contenir de barre oblique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo nome non può essere usato. I nomi non possono essere vuoti né contenere una barra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この名前は使用できません。名前を空にすることはできず、スラッシュを含めることもできません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 이름은 사용할 수 없습니다. 이름은 비워 둘 수 없으며 슬래시를 포함할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die naam kan niet worden gebruikt. Namen mogen niet leeg zijn en geen schuine streep bevatten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esse nome não pode ser usado. Os nomes não podem estar vazios nem conter uma barra."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это имя нельзя использовать. Имя не может быть пустым или содержать косую черту."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法使用该名称。名称不能为空，也不能包含斜杠。"
           }
         }
       }
