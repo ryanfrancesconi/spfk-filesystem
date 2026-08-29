@@ -25,7 +25,8 @@ let package = Package(
                 .product(name: "SPFKBase", package: "spfk-base"),
                 .product(name: "SwiftExtensions", package: "swift-extensions"),
                 .product(name: "XAttr", package: "swift-xattr"),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "SPFKFileSystemTests",

@@ -28,14 +28,12 @@ public enum FileLockState: String, Codable, Hashable, Sendable, CaseIterable {
     /// Whether ``URL/unlock()`` can clear this.
     public var canUnlock: Bool { self == .locked }
 
-    /// - Note: Unlocalized. This package carries no string catalog; a product surfacing this to
-    ///   the user localizes at its own layer.
     public var localizedDescription: String {
         switch self {
-        case .writable: "Writable"
-        case .locked: "Locked"
-        case .readOnlyVolume: "On a read-only volume"
-        case .notPermitted: "Not writable"
+        case .writable: localized("Writable")
+        case .locked: localized("Locked")
+        case .readOnlyVolume: localized("On a read-only volume")
+        case .notPermitted: localized("Not writable")
         }
     }
 
@@ -44,10 +42,10 @@ public enum FileLockState: String, Codable, Hashable, Sendable, CaseIterable {
         let name = url.lastPathComponent
 
         return switch self {
-        case .writable: "\(name) could not be written"
-        case .locked: "\(name) is locked. Unlock it to save changes."
-        case .readOnlyVolume: "\(name) is on a read-only volume and cannot be changed."
-        case .notPermitted: "\(name) is not writable. Check its permissions."
+        case .writable: localized("\(name) could not be written")
+        case .locked: localized("\(name) is locked. Unlock it to save changes.")
+        case .readOnlyVolume: localized("\(name) is on a read-only volume and cannot be changed.")
+        case .notPermitted: localized("\(name) is not writable. Check its permissions.")
         }
     }
 }
