@@ -39,8 +39,11 @@ Then add `SPFKFileSystem` to your target's dependencies:
 | `DirectoryEnumerationObserver` | Y | Y |
 | `DirectoryEvent` | Y | Y |
 | `URL` xattr extensions | Y | Y |
+| `FileModificationObserver` | Y | Y |
+| `FileCommands` | Y | Y |
 | `FSEventsDirectoryObserver` | Y | — |
-| `SecureURLRegistry` | Y | — |
+| `VolumeObserver` | Y | — |
+| `FileLockState` | Y | — |
 | `TagColor` | Y | — |
 | `FinderTagDescription` | Y | — |
 | `FinderTagGroup` | Y | — |
@@ -54,23 +57,9 @@ Two strategies for monitoring a directory tree for file additions and deletions.
 
 `DirectoryEnumerationObserver` creates one `DirectoryObserver` per subdirectory, each backed by a file descriptor and `DispatchSource`. Works on all Apple platforms but consumes one file descriptor per monitored subdirectory.
 
-```swift
-let observer = try DirectoryEnumerationObserver(url: directoryURL, delegate: self)
-try await observer.start()
-// ...
-await observer.stop()
-```
-
 ### FSEvents (macOS only)
 
 `FSEventsDirectoryObserver` uses a single CoreServices `FSEventStream` to monitor an entire directory tree recursively. More efficient for large hierarchies — no per-directory file descriptors.
-
-```swift
-let observer = try FSEventsDirectoryObserver(url: directoryURL, delegate: self)
-await observer.start()
-// ...
-await observer.stop()
-```
 
 | | `DirectoryEnumerationObserver` | `FSEventsDirectoryObserver` |
 |---|---|---|
@@ -97,31 +86,48 @@ await observer.stop()
 
 Read and write macOS Finder color labels and custom text tags via extended attributes.
 
-```swift
-// Read tags
-let tagColors = fileURL.tagColors       // [TagColor]
-let tagNames = fileURL.tagNames         // [String]
-let tags = fileURL.finderTags           // [FinderTagDescription]
-
-// Write tags
-try fileURL.set(tagColors: [.red, .blue])
-try fileURL.set(finderTags: tagGroup)
-try fileURL.removeAllTags()
-```
-
 `TagColor` represents the 7 built-in Finder label colors (gray, green, purple, blue, yellow, red, orange) plus `.none`. `FinderTagDescription` pairs a color with a label string and also supports custom text-only tags. `FinderTagGroup` collects multiple tag descriptions for batch operations.
 
-## Security-Scoped Bookmarks (macOS)
+## Security-scoped access (macOS)
 
-`SecureURLRegistry` manages `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` lifecycle for sandboxed apps. Duplicate access calls for the same URL are automatically deduplicated to prevent unbalanced reference counts.
+`URL.withSecurityScopedAccess` scopes access to the duration of a body, in sync and async forms —
+for short-lived work such as reading tags, parsing a waveform or analyzing a file. Longer-lived
+access, such as streaming a file for playback, calls `startAccessingSecurityScopedResource()` and
+its counterpart directly.
 
-```swift
-let registry = SecureURLRegistry()
-let (url, isStale) = try await registry.create(resolvingBookmarkData: bookmarkData)
-// ... use url ...
-await registry.release(url: url)    // release individual URL when done
-await registry.releaseAll()         // or release all on app shutdown
-```
+The body runs even when `startAccessingSecurityScopedResource()` returns `false`: the file may be
+reachable through the powerbox — a current-session open-panel selection — or be a local path
+needing no sandbox extension at all. The async form runs on the caller's actor rather than hopping
+off it, so a body touching isolated state stays legal.
+
+## File modification
+
+`FileModificationObserver` watches a set of tracked files and reports what changed, classified by
+`FileModificationKind` as content or attributes-only.
+
+**The distinction is not academic.** On macOS, writing an extended attribute — which is where Finder
+tags live — bumps the attribute modification date and leaves the content modification date alone.
+Verified directly: setting the user-tags attribute moved ctime and not mtime, while appending a byte
+moved both. So "the user tagged this file in Finder" and "the user re-exported this file from
+Photoshop" are the same event to anything comparing one date, and they want very different
+responses — re-reading a few extended attributes versus re-decoding EXIF, XMP and a video track.
+`FileModificationState` keeps the dates apart rather than collapsing them, so a later comparison can
+say which moved.
+
+`VolumeObserver` reports volumes mounting and unmounting.
+
+## File commands
+
+`FileCommands` covers rename, duplicate, move to trash, restore from trash and delete.
+
+Two error conventions, split by arity. The single-URL `rename` throws, because there is one outcome
+and the caller must react to it. The batch calls report per file so one bad file does not cost the
+caller the other nine — duplicate and move-to-trash hand back whatever succeeded and throw only when
+nothing did, while restore and delete return a map naming just the failures.
+
+`FileLockState` answers why a file refuses a write, or that it does not. Not a `Bool`, because
+`isWritable` cannot say *why*: a file the owner made read-only and a file carrying the `uchg` flag
+both report `false`, and only the second is something an app can offer to clear.
 
 ## Dependencies
 
