@@ -41,6 +41,7 @@ Then add `SPFKFileSystem` to your target's dependencies:
 | `URL` xattr extensions | Y | Y |
 | `FileModificationObserver` | Y | Y |
 | `FileCommands` | Y | Y |
+| `TrashReceipt` | Y | Y |
 | `FSEventsDirectoryObserver` | Y | — |
 | `VolumeObserver` | Y | — |
 | `FileLockState` | Y | — |
@@ -124,6 +125,11 @@ Two error conventions, split by arity. The single-URL `rename` throws, because t
 and the caller must react to it. The batch calls report per file so one bad file does not cost the
 caller the other nine — duplicate and move-to-trash hand back whatever succeeded and throw only when
 nothing did, while restore and delete return a map naming just the failures.
+
+`TrashReceipt` carries where a trashed set currently sits, keyed by where it came from. Mutable
+because the location is only stable until the name collides: a file re-trashed while one of the same
+name is already in the Trash gets a timestamp appended, so an undo engine that registers the inverse
+before running the handler has no other channel to learn where the files actually went.
 
 `FileLockState` answers why a file refuses a write, or that it does not. Not a `Bool`, because
 `isWritable` cannot say *why*: a file the owner made read-only and a file carrying the `uchg` flag
