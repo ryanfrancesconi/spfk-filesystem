@@ -188,6 +188,11 @@
             suppressionCount > 0
         }
 
+        /// The files currently being watched.
+        public var trackedURLs: Set<URL> {
+            Set(modificationStates.keys)
+        }
+
         /// Updates the set of tracked files. Restarts the stream if the set of monitored
         /// directories changes.
         /// - Parameter newFiles: The new mapping of file URLs to modification state.
