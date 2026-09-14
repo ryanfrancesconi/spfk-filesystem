@@ -3,9 +3,6 @@
 import Foundation
 
 /// What a write does when its output already exists.
-///
-/// The display names' translations are still in spfk-audio-base's catalog, pending migration to this
-/// package's.
 public enum FileConflictScheme: Int, Codable, Hashable, Sendable, CaseIterable {
     /// delete the existing file
     case overwrite = 0
