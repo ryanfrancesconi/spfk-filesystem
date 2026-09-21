@@ -32,7 +32,18 @@ extension FileSystem {
         suffix: String = "",
         excluding: Set<URL> = []
     ) -> URL {
-        guard url.exists || excluding.contains(url) else { return url } // no need to do anything
+        nextAvailableURL(url, delimiter: delimiter, suffix: suffix, isTaken: { excluding.contains($0) })
+    }
+
+    /// Returns the next available URL, treating a name as taken when it exists on disk or
+    /// `isTaken` says so — for a caller whose claimed names compare other than by `URL` equality.
+    public static func nextAvailableURL(
+        _ url: URL,
+        delimiter: String = "_",
+        suffix: String = "",
+        isTaken: (URL) -> Bool
+    ) -> URL {
+        guard url.exists || isTaken(url) else { return url } // no need to do anything
 
         let isDirectory = url.isDirectory
         let parentDirectory = url.deletingLastPathComponent()
@@ -50,7 +61,7 @@ extension FileSystem {
                 .appendingPathExtension(pathExtension)
 
             // found an available numbered file
-            if !test.exists, !excluding.contains(test) { return test }
+            if !test.exists, !isTaken(test) { return test }
         }
         return url
     }
