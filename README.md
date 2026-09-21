@@ -81,6 +81,8 @@ Two strategies for monitoring a directory tree for file additions and deletions.
 - **Search** — `findDirectory(named:in:)`
 - **Streaming** — `fileURLStream(in:)`
 - **Path utilities** — `nextAvailableURL(_:)`
+- **File identity** — `isSameFile(_:_:)`, by resource identifier rather than path, so a symlinked directory or a case difference on a case-insensitive volume still matches
+- **Conflicts** — `FileConflictScheme` (overwrite, rename uniquely, or report an error) for a write whose destination exists
 - **Cleanup** — `deleteEmptyDirectories(in:)`
 
 ## Finder Tags (macOS)
