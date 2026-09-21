@@ -22,6 +22,7 @@ final class DirectoryObserverActorTests: BinTestCase, @unchecked Sendable {
         let observer = try DirectoryObserver(url: bin)
         await observer.setDelegate(delegate)
         try await observer.start()
+        defer { await observer.stop() }
 
         let source = TestBundleResources.shared.formats.first!
         _ = try copyToBin(urls: [source])
@@ -31,8 +32,6 @@ final class DirectoryObserverActorTests: BinTestCase, @unchecked Sendable {
         let events = await delegate.events
         let newEvents = events.filter(\.isNew)
         #expect(newEvents.count >= 1, "Should detect new file via DirectoryObserver directly")
-
-        await observer.stop()
     }
 
     @Test func stopPreventsDetection() async throws {

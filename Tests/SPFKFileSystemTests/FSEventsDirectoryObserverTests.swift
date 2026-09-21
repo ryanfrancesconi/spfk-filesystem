@@ -36,6 +36,7 @@
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
+            defer { await observer.stop() }
 
             let fileCount = 3
             for i in 0 ..< fileCount {
@@ -47,8 +48,6 @@
 
             let addedCount = await testDelegate.added.count
             #expect(addedCount == fileCount, "Should detect all added files")
-
-            await observer.stop()
         }
 
         @Test func fileDeletionDetected() async throws {
@@ -60,6 +59,7 @@
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
+            defer { await observer.stop() }
 
             try FileManager.default.removeItem(at: fileURL)
 
@@ -67,8 +67,6 @@
 
             let removedCount = await testDelegate.removed.count
             #expect(removedCount >= 1, "Should detect deleted file")
-
-            await observer.stop()
         }
 
         @Test func subdirectoryFileDetected() async throws {
@@ -77,6 +75,7 @@
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
+            defer { await observer.stop() }
 
             let subdir = observeDir.appendingPathComponent("subdir")
             try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
@@ -88,8 +87,6 @@
 
             let addedCount = await testDelegate.added.count
             #expect(addedCount >= 1, "Should detect file added in subdirectory")
-
-            await observer.stop()
         }
 
         @Test func multipleRapidChangesCoalesced() async throws {
@@ -98,6 +95,7 @@
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
+            defer { await observer.stop() }
 
             for i in 0 ..< 5 {
                 let fileURL = observeDir.appendingPathComponent("rapid_\(i).txt")
@@ -108,8 +106,6 @@
 
             let addedCount = await testDelegate.added.count
             #expect(addedCount == 5, "Should detect all rapidly created files")
-
-            await observer.stop()
         }
 
         @Test func stopPreventsNotifications() async throws {
@@ -140,6 +136,7 @@
 
             let observer = try FSEventsDirectoryObserver(url: observeDir, delegate: testDelegate)
             await observer.start()
+            defer { await observer.stop() }
 
             let renamedURL = observeDir.appendingPathComponent("renamed.txt")
             try FileManager.default.moveItem(at: originalURL, to: renamedURL)
@@ -151,8 +148,6 @@
 
             #expect(removedCount >= 1, "Should detect removal of original file")
             #expect(addedCount >= 1, "Should detect addition of renamed file")
-
-            await observer.stop()
         }
     }
 #endif

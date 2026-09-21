@@ -52,6 +52,7 @@ final class DirectoryObserverTests: BinTestCase {
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
         try await observer.start()
+        defer { await observer.stop() }
 
         let urls = TestBundleResources.shared.formats
         let newFiles = try copy(to: bin, urls: urls)
@@ -76,7 +77,6 @@ final class DirectoryObserverTests: BinTestCase {
         let finalRemovedCount = await testDelegate.removed.count
         #expect(finalRemovedCount == urls.count)
 
-        await observer.stop()
         await testDelegate.reset()
     }
 
@@ -110,6 +110,7 @@ final class DirectoryObserverTests: BinTestCase {
 
         let observer = try DirectoryEnumerationObserver(url: bin, delegate: testDelegate)
         try await observer.start()
+        defer { await observer.stop() }
         try await observer.start() // should not throw or duplicate observers
 
         let urls = [TestBundleResources.shared.formats.first!]
@@ -120,7 +121,6 @@ final class DirectoryObserverTests: BinTestCase {
         let addedCount = await testDelegate.added.count
         #expect(addedCount == 1, "Only one event per file, even after double start")
 
-        await observer.stop()
         await testDelegate.reset()
     }
 
@@ -137,6 +137,7 @@ final class DirectoryObserverTests: BinTestCase {
         try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
 
         try await observer.start()
+        defer { await observer.stop() }
 
         // Copy a file into the subdirectory
         let source = TestBundleResources.shared.formats.first!
@@ -148,7 +149,6 @@ final class DirectoryObserverTests: BinTestCase {
         let addedCount = await testDelegate.added.count
         #expect(addedCount >= 1, "Should detect file added in subdirectory")
 
-        await observer.stop()
         await testDelegate.reset()
     }
 }
