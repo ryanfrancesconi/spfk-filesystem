@@ -9,7 +9,7 @@
 
     @testable import SPFKFileSystem
 
-    @Suite(.tags(.development))
+    @Suite(.tags(.development, .slow))
     final class FinderTagDevelopmentTests {
         @Test func dumpFinderTags() {
             let url = URL(fileURLWithPath: "/Users/rf/Downloads/TestResources/formats/tabla.m4a")
