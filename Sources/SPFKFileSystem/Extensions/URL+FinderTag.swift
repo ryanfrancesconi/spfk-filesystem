@@ -17,9 +17,9 @@
     /// array; color tags use the format `"Color\nIndex"` (e.g., `"Red\n6"`),
     /// while text-only tags are bare strings.
     ///
-    /// Reading is non-throwing — missing or unreadable attributes return empty
-    /// arrays. Writing is throwing because xattr operations can fail (e.g., on
-    /// read-only volumes).
+    /// The properties read without throwing, answering empty for a missing or unreadable
+    /// attribute; ``readTagNames()`` tells the two apart. Writing throws, and refuses to replace an
+    /// attribute that exists but will not decode, since its tags are unknown rather than absent.
     ///
     /// The underlying xattr I/O is performed by ``setExtendedAttributeAndModify(name:value:options:)``
     /// in `URL+XAttr.swift`, which also bumps the file's modification date so
@@ -55,17 +55,26 @@
         /// attribute is missing or cannot be read.
         public var tagNames: [String] {
             do {
-                let data = try extendedAttributeValue(forName: Self.userTagsKey)
-
-                return try PropertyListDecoder().decode(
-                    [String].self,
-                    from: data
-                )
-
+                return try readTagNames()
             } catch {
-                // Log.error(error)
+                Log.error("Unreadable Finder tags on \(lastPathComponent):", error)
                 return []
             }
+        }
+
+        /// The raw tag name strings, or an empty array when the file has no tag attribute.
+        ///
+        /// - Throws: when the attribute exists but cannot be read or decoded.
+        public func readTagNames() throws -> [String] {
+            let data: Data
+
+            do {
+                data = try extendedAttributeValue(forName: Self.userTagsKey)
+            } catch let error as NSError where error.domain == NSPOSIXErrorDomain && error.code == Int(ENOATTR) {
+                return []
+            }
+
+            return try PropertyListDecoder().decode([String].self, from: data)
         }
 
         /// The ``TagColor`` values derived from this file's tags.
@@ -133,7 +142,8 @@
 
         /// Replaces this file's Finder tags with the given raw name strings.
         ///
-        /// If `tagNames` is empty, all tags are removed via ``removeAllTags()``.
+        /// If `tagNames` is empty, all tags are removed via ``removeAllTags()``. Throws without
+        /// writing when the file's current tag attribute will not decode.
         /// - Parameter tagNames: Raw tag strings in the format stored by the
         ///   xattr (e.g., `"Red\n6"` for colors, or plain text for custom tags).
         public func set(tagNames: [String]) throws {
@@ -141,6 +151,8 @@
                 try removeAllTags()
                 return
             }
+
+            _ = try readTagNames()
 
             let data = try tagNames.propertyListData()
 
@@ -166,10 +178,10 @@
         ///
         /// Transfers the raw `_kMDItemUserTags` xattr strings verbatim, preserving
         /// both color labels and custom text tags without re-encoding. Does nothing
-        /// if the source has no tags.
+        /// if the source has no tags, and throws if its tags will not decode.
         /// - Parameter destination: The file URL to receive the tags.
         public func copyFinderTags(to destination: URL) throws {
-            let names = tagNames
+            let names = try readTagNames()
             guard names.isNotEmpty else { return }
             try destination.set(tagNames: names)
         }
