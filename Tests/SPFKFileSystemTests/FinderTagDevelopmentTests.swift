@@ -9,15 +9,18 @@
 
     @testable import SPFKFileSystem
 
-    @Suite(.tags(.development, .slow))
-    final class FinderTagDevelopmentTests {
-        @Test func dumpFinderTags() {
-            let url = URL(fileURLWithPath: "/Users/rf/Downloads/TestResources/formats/tabla.m4a")
+    /// A folder of local files, named by `SPFK_DEVELOPMENT_RESOURCES`. Unset, these tests are disabled.
+    private let developmentResources = ProcessInfo.processInfo.environment["SPFK_DEVELOPMENT_RESOURCES"]
+        .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
 
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                print("File not found: \(url.path)")
-                return
-            }
+    @Suite(
+        .tags(.development, .slow),
+        .enabled(if: developmentResources != nil, "Set SPFK_DEVELOPMENT_RESOURCES to a folder holding formats/tabla.m4a")
+    )
+    final class FinderTagDevelopmentTests {
+        @Test func dumpFinderTags() throws {
+            let url = try #require(developmentResources).appendingPathComponent("formats/tabla.m4a")
+            try #require(FileManager.default.fileExists(atPath: url.path))
 
             // Raw xattr tag names
             let tagNames = url.tagNames
