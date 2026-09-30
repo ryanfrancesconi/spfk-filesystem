@@ -16,8 +16,7 @@
     /// `EPERM`, and a library that falls back to read-only on that turns a locked file into a
     /// generic save failure with no reason attached.
     ///
-    /// These pin the platform behavior a `FileLockState` is to be built on — see
-    /// `file-lock-state.md`.
+    /// These pin the platform behavior `FileLockState` is built on.
     @Suite(.tags(.file))
     struct FileLockTests {
         // MARK: - What the resource keys report
