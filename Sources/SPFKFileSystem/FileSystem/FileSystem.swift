@@ -15,6 +15,5 @@ import Foundation
 ///
 /// On macOS, additional methods for security-scoped file access and Finder tag management
 /// are available in ``SecureURLRegistry`` and the Tags extensions (``URL/tagNames``,
-/// ``TagColor``, ``FinderTagGroup``). An AppKit-dependent extension with `authorizedFileURLs`
-/// and `requestDirectory` lives in `spfk-utils` as `FileSystem+AppKit.swift`.
+/// ``TagColor``, ``FinderTagGroup``).
 public enum FileSystem {}
