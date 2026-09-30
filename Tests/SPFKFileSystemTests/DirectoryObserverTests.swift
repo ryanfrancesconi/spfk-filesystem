@@ -10,8 +10,6 @@ actor TestEnumerationDelegate: DirectoryEnumerationObserverDelegate {
     var removed = [URL]()
 
     func directoryUpdated(events: Set<DirectoryEvent>) async throws {
-        Log.debug(events)
-        
         for event in events {
             switch event {
             case let .new(files: files, source: _):

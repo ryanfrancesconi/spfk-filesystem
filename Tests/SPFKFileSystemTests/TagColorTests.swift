@@ -64,8 +64,6 @@ import SPFKBase
             let colors = TagColor.allCases.compactMap { $0.nsColor }
 
             #expect(colors.count == TagColor.allCases.count)
-
-            Log.debug(TagColor.array)
         }
     }
 

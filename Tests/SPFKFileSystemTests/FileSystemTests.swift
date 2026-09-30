@@ -15,24 +15,20 @@ class FileSystemTests: BinTestCase {
 
         try volumes.forEach {
             // Free space on the volume - shouldn't be nil
-            let freeSpace = try #require(
+            _ = try #require(
                 FileSystem.freeSpaceDescription(forPath: $0.path)
             )
 
-            let totalSpace = try #require(
+            _ = try #require(
                 FileSystem.totalSpaceDescription(forPath: $0.path)
             )
-
-            Log.debug($0.path, "\(freeSpace)/\(totalSpace)")
         }
 
         let tmp = FileManager.default.temporaryDirectory.path
 
-        let tmpFreeSpace = try #require(
+        _ = try #require(
             FileSystem.freeSpaceDescription(forPath: tmp)
         )
-
-        Log.debug(tmp, tmpFreeSpace)
     }
 
     // seems to fail with [] - permissions?
@@ -40,8 +36,6 @@ class FileSystemTests: BinTestCase {
         let directory = TestBundleResources.shared.resourcesDirectory
 
         let urls = FileSystem.enumerateFiles(in: directory, recursive: true)
-
-        Log.debug(urls)
 
         #expect(urls.count > 0)
     }
@@ -51,8 +45,6 @@ class FileSystemTests: BinTestCase {
         try FileManager.default.createDirectory(at: bin.appendingPathComponent("dir2", conformingTo: .folder), withIntermediateDirectories: false)
 
         let allDirs = FileSystem.enumerateDirectories(in: bin, recursive: true)
-
-        Log.debug(allDirs.map(\.path))
 
         #expect(allDirs.count == 2)
     }

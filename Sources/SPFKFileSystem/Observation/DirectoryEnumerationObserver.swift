@@ -61,10 +61,6 @@ public final class DirectoryEnumerationObserver: Sendable {
         self.delegate = delegate
     }
 
-    deinit {
-        Log.debug("- { \(self) }")
-    }
-
     /// Begins recursive observation by creating a ``DirectoryObserver`` for each subdirectory.
     ///
     /// Performs a deep enumeration to discover all subdirectories, then starts monitoring each one.

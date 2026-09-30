@@ -142,8 +142,6 @@ extension DirectoryObserver {
     private func directoryDidChange() {
         guard !isPolling else { return }
 
-        Log.debug("* change detected for \(url.path)")
-
         isPolling = true
         startPolling()
     }

@@ -92,8 +92,6 @@ extension ObservationData: DirectoryObserverDelegate {
     func handleObservation(event: DirectoryEvent) async {
         switch event {
         case let .new(files: urls, source: source):
-            Log.debug("new", "source:", source, "urls", urls)
-
             if source == url {
                 do {
                     try await startFileObservation(for: urls)
@@ -103,8 +101,6 @@ extension ObservationData: DirectoryObserverDelegate {
             }
 
         case let .removed(files: urls, source: source):
-            Log.debug("removed", "source:", source, "urls", urls)
-
             if source == url {
                 await remove(urls: urls)
             }

@@ -32,8 +32,6 @@ extension FileSystem {
                 }
             )
 
-            Log.debug(directories)
-
             for localURL in directories {
                 let dsstore = localURL.appendingPathComponent(".DS_Store")
 
