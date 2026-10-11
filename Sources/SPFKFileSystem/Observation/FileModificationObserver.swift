@@ -58,8 +58,8 @@
         /// The FSEvents coalescing latency in seconds.
         private let latency: CFTimeInterval
 
-        private var stream: FSEventStreamRef?
-        private var callbackContext: CallbackContext?
+        /// Written only on the actor; `nonisolated(unsafe)` so `deinit` can tear it down.
+        nonisolated(unsafe) private var stream: FSEventStreamRef?
 
         /// Maps directory URL → set of tracked file URLs in that directory.
         private var directoryIndex: [URL: Set<URL>]
@@ -98,6 +98,11 @@
             directoryIndex = Self.buildDirectoryIndex(from: Set(trackedFiles.keys))
         }
 
+        /// An observer released without ``stop()`` would otherwise leave its stream running.
+        deinit {
+            if let stream { Self.tearDown(stream) }
+        }
+
         /// Starts observing the parent directories of tracked files for changes.
         ///
         /// Creates an `FSEventStream` monitoring all unique parent directories. Uses
@@ -109,14 +114,15 @@
             guard stream == nil else { return }
             guard directoryIndex.isNotEmpty else { return }
 
-            let context = CallbackContext(self)
-            callbackContext = context
+            // Held across the create, which takes the stream's own reference through `retain`.
+            let context = Unmanaged.passRetained(CallbackContext(self))
+            defer { context.release() }
 
             var fsContext = FSEventStreamContext(
                 version: 0,
-                info: Unmanaged.passUnretained(context).toOpaque(),
-                retain: nil,
-                release: nil,
+                info: context.toOpaque(),
+                retain: CallbackContext.retain,
+                release: CallbackContext.release,
                 copyDescription: nil
             )
 
@@ -155,12 +161,8 @@
         public func stop() {
             guard let stream else { return }
 
-            FSEventStreamStop(stream)
-            FSEventStreamInvalidate(stream)
-            FSEventStreamRelease(stream)
-
+            Self.tearDown(stream)
             self.stream = nil
-            callbackContext = nil
 
             coalescingTask?.cancel()
             coalescingTask = nil
@@ -228,12 +230,31 @@
     // MARK: - FSEvents Callback
 
     extension FileModificationObserver {
-        /// Context object bridging the C callback to the Swift actor.
+        /// Stops and releases `stream`. Its context is released with it, so an event already in
+        /// flight finds no observer rather than freed memory.
+        nonisolated static func tearDown(_ stream: FSEventStreamRef) {
+            FSEventStreamStop(stream)
+            FSEventStreamInvalidate(stream)
+            FSEventStreamRelease(stream)
+        }
+
+        /// Context object bridging the C callback to the Swift actor. Owned by the stream.
         private final class CallbackContext: @unchecked Sendable {
             weak var observer: FileModificationObserver?
 
             init(_ observer: FileModificationObserver) {
                 self.observer = observer
+            }
+
+            static let retain: CFAllocatorRetainCallBack = { info in
+                guard let info else { return nil }
+                _ = Unmanaged<CallbackContext>.fromOpaque(info).retain()
+                return info
+            }
+
+            static let release: CFAllocatorReleaseCallBack = { info in
+                guard let info else { return }
+                Unmanaged<CallbackContext>.fromOpaque(info).release()
             }
         }
 
