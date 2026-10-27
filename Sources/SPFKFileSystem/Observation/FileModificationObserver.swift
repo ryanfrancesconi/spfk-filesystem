@@ -190,6 +190,11 @@
             suppressionCount > 0
         }
 
+        /// What the next event in `url`'s directory is compared against.
+        func trackedState(for url: URL) -> FileModificationState? {
+            modificationStates[url]
+        }
+
         /// The files currently being watched.
         public var trackedURLs: Set<URL> {
             Set(modificationStates.keys)
