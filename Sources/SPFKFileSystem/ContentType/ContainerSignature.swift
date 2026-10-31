@@ -39,6 +39,18 @@ public enum ContainerSignature: Sendable, Equatable {
             self.type = type
             self.pathExtension = pathExtension ?? type.preferredFilenameExtension ?? ""
         }
+
+        /// `url`'s file name with its extension replaced by ``pathExtension``, or only removed when
+        /// the rest already ends in an extension this content may carry (`x.aif.mp3` → `x.aif`).
+        public func fileName(replacingExtensionOf url: URL) -> String {
+            let base = url.deletingPathExtension()
+
+            if NamedType(pathExtension: base.pathExtension)?.accepting.contains(signature) == true {
+                return base.lastPathComponent
+            }
+
+            return "\(base.lastPathComponent).\(pathExtension)"
+        }
     }
 
     /// What a file's content proves it to be when its extension names a type that content may not

@@ -200,4 +200,23 @@ final class ContainerSignatureTests: BinTestCase {
         }
         #expect(content.pathExtension == "wav")
     }
+
+    /// Only the wrong extension goes when the name already ends in one fitting the content.
+    @Test(arguments: [
+        (resources.tabla_aif, "x.aif.mp3", "x.aif"),
+        (resources.tabla_m4a, "tabla - v2 copy.m4a.mp3", "tabla - v2 copy.m4a"),
+        (resources.tabla_aif, "x.mp3", "x.aiff"),
+        (resources.tabla_aif, "x.wav.mp3", "x.wav.aiff"),
+        (resources.tabla_aif, "x.v2.mp3", "x.v2.aiff"),
+    ])
+    func aCorrectedNameKeepsAnExtensionAlreadyFittingTheContent(source: URL, name: String, expected: String) throws {
+        let directory = bin.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent(name)
+        try FileManager.default.copyItem(at: source, to: url)
+
+        let content = try #require(try ContainerSignature.mismatchedContent(of: url))
+
+        #expect(content.fileName(replacingExtensionOf: url) == expected)
+    }
 }
