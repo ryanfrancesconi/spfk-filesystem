@@ -4,7 +4,7 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 
-Cross-platform file system utilities for Apple platforms — directory enumeration, recursive directory observation, extended attributes, and macOS Finder tag management.
+Cross-platform file system utilities for Apple platforms — directory enumeration, recursive directory observation, extended attributes, content-type sniffing, and macOS Finder tag management.
 
 ## Requirements
 
@@ -42,6 +42,7 @@ Then add `SPFKFileSystem` to your target's dependencies:
 | `FileModificationObserver` | Y | Y |
 | `FileCommands` | Y | Y |
 | `TrashReceipt` | Y | Y |
+| `ContainerSignature` | Y | Y |
 | `FSEventsDirectoryObserver` | Y | — |
 | `VolumeObserver` | Y | — |
 | `FileLockState` | Y | — |
@@ -49,6 +50,10 @@ Then add `SPFKFileSystem` to your target's dependencies:
 | `FinderTagDescription` | Y | — |
 | `FinderTagGroup` | Y | — |
 | `URL` Finder tag extensions | Y | — |
+
+## Content Signatures
+
+`ContainerSignature.mismatchedContent(of:)` reads a file's first bytes and reports the format they prove when the extension names a type that content may not carry — an M4A named `.mp3`, a HEIC named `.jpg`. It answers in `UTType`, with the system's preferred extension for the content as the name to give it. Names that share a family (`.m4a`/`.mp4`/`.mov`, `.aif`/`.aifc`, `.mkv`/`.mka`/`.webm`) are each correct, TIFF content is correct under any raw extension, and an extension outside every recognized format is never judged. MPEG audio has no signature, so it is never proven.
 
 ## Directory Observation
 
