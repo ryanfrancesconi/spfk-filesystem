@@ -4,8 +4,8 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 
-The file-system layer an app embeds to manage files the user keeps in place: finding them, watching
-them, and acting on them the way Finder would.
+Manages files the user keeps in place: finding them, watching them, and acting on them the way
+Finder would.
 
 It enumerates and observes directory trees, notices volumes coming and going, tells whether a file
 changed in content or only in attributes, reads and writes Finder tags and extended attributes,
