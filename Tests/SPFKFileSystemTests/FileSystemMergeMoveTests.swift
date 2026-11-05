@@ -105,6 +105,23 @@ final class FileSystemMergeMoveTests: BinTestCase {
         #expect(try fm.contentsOfDirectory(atPath: source.path).isEmpty)
     }
 
+    /// Once the copy is complete the move has succeeded: a source entry that cannot be removed
+    /// is left behind rather than failing it.
+    @Test func aSourceThatCannotBeRemovedDoesNotFailACompleteCopy() throws {
+        let source = bin.appendingPathComponent("Source")
+        let destination = bin.appendingPathComponent("Destination")
+        let locked = source.appendingPathComponent("Locked")
+        try write("pinned", to: locked.appendingPathComponent("entry"))
+        try write("waveform", to: source.appendingPathComponent("Waveform/0a/key.wfcache"))
+        try fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: locked.path)
+        defer { try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked.path) }
+
+        try FileSystem.mergeMove(contentsOf: source, into: destination, forceCopy: true, progress: nil)
+
+        #expect(regularFiles(under: destination).count == 2)
+        #expect(!fm.fileExists(atPath: source.appendingPathComponent("Waveform").path))
+    }
+
     @Test func aCancelledCopyLeavesTheSourceAndNoDestination() async throws {
         let source = bin.appendingPathComponent("Source")
         let destination = bin.appendingPathComponent("Destination")

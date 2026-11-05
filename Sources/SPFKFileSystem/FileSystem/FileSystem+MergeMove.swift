@@ -2,6 +2,7 @@
 
 import Darwin
 import Foundation
+import SPFKBase
 
 extension FileSystem {
     /// What a directory tree holds, counting each inode once, as `du` does.
@@ -36,9 +37,9 @@ extension FileSystem {
     /// itself stays, empty. Where both hold an entry at the same path, the destination's is kept.
     ///
     /// On one volume each entry is renamed. Across volumes the tree is copied with files sharing an
-    /// inode linked rather than copied again, and the source is removed only once the copy is
+    /// inode linked rather than copied again, and the source is emptied only once the copy is
     /// complete. Cancelling the calling task, or an error during the copy, removes what was written
-    /// and leaves the source whole.
+    /// and leaves the source whole. A failed rename is not undone.
     ///
     /// - Parameter progress: the fraction of bytes copied; called only for a copy.
     public static func mergeMove(
@@ -86,8 +87,14 @@ extension FileSystem {
             throw error
         }
 
-        for name in try fm.contentsOfDirectory(atPath: source.path) {
-            try fm.removeItem(atPath: (source.path as NSString).appendingPathComponent(name))
+        // The move has succeeded once the copy is complete: an entry that cannot be removed, or
+        // one written into `source` meanwhile, is left behind rather than failing it.
+        for name in (try? fm.contentsOfDirectory(atPath: source.path)) ?? [] {
+            do {
+                try fm.removeItem(atPath: (source.path as NSString).appendingPathComponent(name))
+            } catch {
+                Log.error("Left in the moved directory:", name, error)
+            }
         }
     }
 
