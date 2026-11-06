@@ -1,27 +1,28 @@
 # SPFKFileSystem
 
 [![Version](https://img.shields.io/github/v/tag/ryanfrancesconi/spfk-filesystem)](https://github.com/ryanfrancesconi/spfk-filesystem/tags)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
-[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
+[![Swift](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
+[![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-filesystem%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-filesystem)
 
-Manages files the user keeps in place: finding them, watching them, and acting on them the way
-Finder would.
+File system utilities for working with files in place: enumerating and observing directories,
+Finder tags and extended attributes, and Finder-style file commands.
 
-It enumerates and observes directory trees, notices volumes coming and going, tells whether a file
-changed in content or only in attributes, reads and writes Finder tags and extended attributes,
-recognizes when a file's content contradicts its extension, explains why a file refuses a write,
-and runs Finder-style commands such as rename, duplicate and move to trash. Enumeration, directory
-observation and content sniffing work on iOS too; Finder tags, volume and modification observation,
-and the file commands are macOS-only.
+## Features
 
-Nothing here knows what a file contains or what a library is: format parsing belongs to the media
-packages, and library state to spfk-playlist-data.
+- Enumerate and observe directory trees
+- Observe volumes mounting and unmounting
+- Tell a content change from an attribute-only change (`FileModificationState`)
+- Read and write Finder tags and extended attributes
+- Detect a file whose content does not match its extension (`ContainerSignature`)
+- Report why a file refuses a write (`FileLockState`)
+- Rename, duplicate, move to trash and restore (`FileCommands`)
+- Finder tags, volume and modification observation, and the file commands are macOS only
 
-## Attributes versus content
+## Notes
 
-Writing an extended attribute, which is where Finder tags live, moves a file's attribute
-modification date and leaves its content date alone. Anything deciding whether to re-read a file
-should compare the content date, or a Finder tag change costs a full re-parse.
+- Writing an extended attribute, including a Finder tag, changes a file's attribute modification
+  date and not its content modification date. Compare the content date to decide whether to re-read
+  a file.
 
 ## About
 
