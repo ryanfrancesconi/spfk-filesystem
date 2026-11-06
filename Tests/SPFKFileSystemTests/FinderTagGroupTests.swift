@@ -306,6 +306,21 @@
             #expect(!group.tags.contains(where: { $0.tagColor == .red }))
             #expect(!group.tags.contains(where: { $0.tagColor == .blue }))
         }
+
+        /// `.none` is no color, so a set naming it must not write a text tag called "None", and
+        /// applying the same set twice leaves the group as it was after the first.
+        @Test func updateColorsIgnoresNone() {
+            var group = FinderTagGroup(tags: [FinderTagDescription(label: "EB8B7AFF"), FinderTagDescription(tagColor: .red)])
+
+            group.update(colors: [FinderTagDescription(tagColor: .none), FinderTagDescription(tagColor: .red)])
+            let once = group
+
+            group.update(colors: [FinderTagDescription(tagColor: .none), FinderTagDescription(tagColor: .red)])
+
+            #expect(!group.tags.contains { $0.label == TagColor.none.name })
+            #expect(group.tags.map(\.label).sorted() == ["EB8B7AFF", "Red"])
+            #expect(group == once)
+        }
     }
 
 #endif

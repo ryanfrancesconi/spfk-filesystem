@@ -79,7 +79,7 @@
         /// Replaces all color tags, keeping text-only tags and appending the new colors.
         public mutating func update(colors: [FinderTagDescription]) {
             tags = tags.filter { $0.tagColor == .none }
-            tags += colors
+            tags += colors.filter { $0.tagColor != .none }
             sort()
         }
 
