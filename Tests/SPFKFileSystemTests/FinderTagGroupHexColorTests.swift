@@ -52,6 +52,39 @@
             #expect(group.hexColorTag?.stringValue == "FF2160FF")
         }
 
+        // MARK: - displayLabels
+
+        /// One alphabetical list, the custom color by its display name; the raw hex tag is hidden.
+        @Test func displayLabelsSortsEveryNameTogether() throws {
+            let orange = try #require(HexColor(string: "FF9933FF"))
+            var group = FinderTagGroup(tags: [
+                FinderTagDescription(tagColor: .red),
+                FinderTagDescription(tagColor: .blue),
+                FinderTagDescription(label: "spfk"),
+                FinderTagDescription(label: "Debug"),
+                FinderTagDescription(label: "RIP"),
+            ])
+            group.updateCustom(hexColor: orange)
+
+            let expected = ["Blue", "Debug", orange.colorDisplayName, "Red", "RIP", "spfk"]
+                .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            #expect(group.displayLabels(hexColor: orange) == expected.joined(separator: ", "))
+        }
+
+        /// A Finder color naming the same hue as the custom color is shown once, as the custom color.
+        @Test func displayLabelsSkipsTheFinderColorTheCustomColorRepeats() throws {
+            let orange = try #require(HexColor(string: "FF9933FF"))
+            let group = FinderTagGroup(tags: [
+                FinderTagDescription(tagColor: .orange),
+                FinderTagDescription(tagColor: .blue),
+            ])
+
+            let labels = group.displayLabels(hexColor: orange).components(separatedBy: ", ")
+            #expect(labels.count == 2)
+            #expect(labels.contains(orange.colorDisplayName))
+            #expect(labels.contains("Blue"))
+        }
+
         // MARK: - setHexColorTag mutator
 
         @Test func setHexColorTagAddsToEmptyGroup() {

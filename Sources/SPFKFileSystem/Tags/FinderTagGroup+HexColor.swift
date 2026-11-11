@@ -44,6 +44,21 @@
                 tags.append(FinderTagDescription(label: hexColor.stringValue))
             }
         }
+
+        /// Every tag's name in alphabetical order, the custom color included as its display name.
+        ///
+        /// Raw hex tags are omitted in favor of `hexColor`, as is a Finder color naming the same hue.
+        public func displayLabels(hexColor: HexColor?) -> String {
+            let hexColorBaseName = hexColor?.colorName.rawValue.capitalized
+
+            let tagLabels = tags
+                .filter { $0.tagColor == .none ? HexColor(string: $0.label) == nil : $0.label != hexColorBaseName }
+                .map(\.label)
+
+            return (tagLabels + [hexColor?.colorDisplayName].compactMap(\.self))
+                .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                .joined(separator: ", ")
+        }
     }
 
 #endif
