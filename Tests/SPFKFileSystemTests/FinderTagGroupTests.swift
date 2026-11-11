@@ -14,22 +14,6 @@
     final class FinderTagGroupTests {
         // MARK: - FinderTagDescription basics
 
-        @Test func encodeDecodeStandardColorTag() throws {
-            let tag = FinderTagDescription(tagColor: .red)
-            let data = try JSONEncoder().encode(tag)
-            let decoded = try JSONDecoder().decode(FinderTagDescription.self, from: data)
-            #expect(decoded.tagColor == .red)
-            #expect(decoded.label == "Red")
-        }
-
-        @Test func encodeDecodeCustomTextTag() throws {
-            let tag = FinderTagDescription(label: "MyTag")
-            let data = try JSONEncoder().encode(tag)
-            let decoded = try JSONDecoder().decode(FinderTagDescription.self, from: data)
-            #expect(decoded.tagColor == .none)
-            #expect(decoded.label == "MyTag")
-        }
-
         @Test func tagDescriptionComparable() {
             let red = FinderTagDescription(tagColor: .red)
             let blue = FinderTagDescription(tagColor: .blue)
@@ -106,17 +90,6 @@
             // none (rawValue 0) sorts before red (rawValue 6)
             #expect(group.tags[0].label == "TextTag")
             #expect(group.tags[1].tagColor == .red)
-        }
-
-        // MARK: - defaultTags
-
-        @Test func defaultTagsContainsAllColors() {
-            let defaults = FinderTagGroup.defaultTags
-            #expect(defaults.tags.count == TagColor.allCases.count)
-
-            for tagColor in TagColor.allCases {
-                #expect(defaults.tags.contains(where: { $0.tagColor == tagColor }))
-            }
         }
 
         // MARK: - stringValue

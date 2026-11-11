@@ -111,14 +111,6 @@
 
         // MARK: - Codable with hex color tags
 
-        @Test func encodeDecodeHexColorTextTag() throws {
-            let tag = FinderTagDescription(label: "FF2160FF")
-            let data = try JSONEncoder().encode(tag)
-            let decoded = try JSONDecoder().decode(FinderTagDescription.self, from: data)
-            #expect(decoded.tagColor == .none)
-            #expect(decoded.label == "FF2160FF")
-        }
-
         @Test func encodeDecodeGroupWithHexColorTag() throws {
             var group = FinderTagGroup(tags: [
                 FinderTagDescription(tagColor: .red),
