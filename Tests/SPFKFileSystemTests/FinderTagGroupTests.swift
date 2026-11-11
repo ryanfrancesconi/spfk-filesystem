@@ -19,7 +19,7 @@
             let blue = FinderTagDescription(tagColor: .blue)
             let custom = FinderTagDescription(label: "AAA")
 
-            // Comparable uses label.standardCompare — "AAA" < "Blue" < "Red"
+            // Comparable uses TagColor order, so custom (.none) tags sort first
             let sorted = [red, blue, custom].sorted()
             #expect(sorted[0].label == "AAA")
             #expect(sorted[1].label == "Blue")
