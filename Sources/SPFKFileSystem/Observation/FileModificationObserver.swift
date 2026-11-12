@@ -35,7 +35,8 @@
     ///
     /// Uses `kFSEventStreamCreateFlagIgnoreSelf` to ignore changes made by the current process.
     /// Additionally provides `suppress()`/`unsuppress()` for explicit suppression during
-    /// app-initiated save operations.
+    /// app-initiated save operations, and `suppress(urls:)`/`unsuppress(urls:)` for a write to a few
+    /// files that lasts long enough that every other change must still be seen.
     ///
     /// ## Usage
     ///
@@ -62,20 +63,24 @@
         nonisolated(unsafe) private var stream: FSEventStreamRef?
 
         /// Maps directory URL → set of tracked file URLs in that directory.
-        private var directoryIndex: [URL: Set<URL>]
+        var directoryIndex: [URL: Set<URL>]
 
         /// Maps file URL → last known modification dates, kept separate so a change can be
         /// classified rather than merely detected. See ``FileModificationState``.
-        private var modificationStates: [URL: FileModificationState]
+        var modificationStates: [URL: FileModificationState]
 
         /// Coalescing state. A file that changes twice before the flush keeps the more severe
         /// classification -- an attribute write following a content write must not downgrade it.
-        private var pendingModifications: [URL: FileModificationKind] = [:]
-        private var coalescingTask: Task<Void, Error>?
-        private let coalescingInterval: TimeInterval
+        var pendingModifications: [URL: FileModificationKind] = [:]
+        var coalescingTask: Task<Void, Error>?
+        let coalescingInterval: TimeInterval
 
         /// Incoming FSEvents are ignored while this is above zero.
         private var suppressionCount: Int = 0
+
+        /// Files whose changes are ignored, each with its count of open suppressions. See
+        /// ``suppress(urls:)``.
+        var suppressedFiles: [URL: Int] = [:]
 
         /// Creates a new file modification observer.
         /// - Parameters:
@@ -282,88 +287,6 @@
             Task {
                 await observer.handleFSEvents(paths: pathArray, flags: flags)
             }
-        }
-    }
-
-    // MARK: - Event Handling
-
-    extension FileModificationObserver {
-        private func handleFSEvents(paths: [String], flags: [FSEventStreamEventFlags]) {
-            guard !isSuppressed else { return }
-
-            // Determine which monitored directories are affected
-            var affectedDirs = Set<URL>()
-
-            for path in paths {
-                let url = URL(fileURLWithPath: path)
-
-                // The path could be either a file within a monitored directory
-                // or the directory itself
-                let parentDir = url.deletingLastPathComponent()
-                let fileDir = url
-
-                if directoryIndex[parentDir] != nil {
-                    affectedDirs.insert(parentDir)
-                }
-
-                if directoryIndex[fileDir] != nil {
-                    affectedDirs.insert(fileDir)
-                }
-            }
-
-            guard affectedDirs.isNotEmpty else { return }
-
-            // Check tracked files in affected directories for modification
-            var foundModifications = false
-
-            for dir in affectedDirs {
-                guard let trackedFiles = directoryIndex[dir] else { continue }
-
-                for fileURL in trackedFiles {
-                    guard let cachedState = modificationStates[fileURL] else { continue }
-
-                    let currentState = FileModificationState(url: fileURL)
-
-                    guard let kind = cachedState.change(to: currentState) else { continue }
-
-                    // Update cached state and record the modification. A content change already
-                    // implies re-reading everything, so it must not be overwritten by an
-                    // attribute change arriving in the same coalescing window.
-                    modificationStates[fileURL] = currentState
-
-                    if pendingModifications[fileURL] != .content {
-                        pendingModifications[fileURL] = kind
-                    }
-
-                    foundModifications = true
-                }
-            }
-
-            if foundModifications {
-                scheduleFlush()
-            }
-        }
-
-        private func scheduleFlush() {
-            coalescingTask?.cancel()
-            coalescingTask = Task { [weak self] in
-                try await Task.sleep(seconds: self?.coalescingInterval ?? 0.5)
-                try Task.checkCancellation()
-
-                guard let self else { return }
-
-                let modifications = await flushPending()
-
-                guard !modifications.isEmpty else { return }
-
-                await delegate?.fileModificationObserver(didDetectModifications: modifications)
-            }
-        }
-
-        private func flushPending() -> [URL: FileModificationKind] {
-            let modifications = pendingModifications
-            pendingModifications.removeAll()
-            return modifications
         }
     }
 
