@@ -9,9 +9,8 @@ import Foundation
 ///
 /// Methods are organized into focused extensions:
 /// - ``mountedVolumes()`` / ``volumeURL(forFileURL:)`` — volume queries
-/// - ``enumerateFiles(in:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` — file enumeration
+/// - ``scanFiles(in:recursive:width:includes:shouldStop:onFound:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` — file enumeration
 /// - ``deleteEmptyDirectories(in:)`` — cleanup
-/// - ``fileURLStream(in:)`` — async streaming enumeration
 ///
 /// On macOS, additional methods for security-scoped file access and Finder tag management
 /// are available in ``SecureURLRegistry`` and the Tags extensions (``URL/tagNames``,

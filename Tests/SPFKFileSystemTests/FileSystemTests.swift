@@ -31,13 +31,13 @@ class FileSystemTests: BinTestCase {
         )
     }
 
-    // seems to fail with [] - permissions?
-    @Test func enumerateFiles() throws {
+    @Test func scanFiles() async throws {
         let directory = TestBundleResources.shared.resourcesDirectory
 
-        let urls = FileSystem.enumerateFiles(in: directory, recursive: true)
+        let result = await FileSystem.scanFiles(in: [directory])
 
-        #expect(urls.count > 0)
+        #expect(result.files.count > 0)
+        #expect(!result.wasStopped)
     }
 
     @Test func enumerateDirectories() throws {
@@ -58,34 +58,5 @@ class FileSystemTests: BinTestCase {
             try next.createDirectory()
             #expect(next.lastPathComponent == "folder_\(number)")
         }
-    }
-
-    @Test func fileURLStream() async throws {
-        // Create some files in the bin directory
-        for i in 0 ..< 5 {
-            let url = bin.appendingPathComponent("file\(i).txt")
-            try Data("test".utf8).write(to: url)
-        }
-
-        // Create a subdirectory with more files
-        let subdir = bin.appendingPathComponent("subdir", conformingTo: .folder)
-        try subdir.createDirectory()
-
-        for i in 0 ..< 3 {
-            let url = subdir.appendingPathComponent("nested\(i).txt")
-            try Data("test".utf8).write(to: url)
-        }
-
-        // Collect async stream results
-        var streamURLs = [URL]()
-        for await url in FileSystem.fileURLStream(in: [bin]) {
-            streamURLs.append(url)
-        }
-
-        // Compare with synchronous version
-        let syncURLs = FileSystem.enumerateFiles(in: [bin])
-
-        #expect(Set(streamURLs) == syncURLs)
-        #expect(streamURLs.count == 8)
     }
 }
