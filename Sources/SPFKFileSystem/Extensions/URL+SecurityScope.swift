@@ -12,7 +12,7 @@ extension URL {
     /// and `stopAccessingSecurityScopedResource()` directly.
     ///
     /// If `startAccessingSecurityScopedResource()` returns `false`, the body is still
-    /// executed — the file may be accessible via the powerbox (a current-session
+    /// executed - the file may be accessible via the powerbox (a current-session
     /// NSOpenPanel selection) or may be a local path that does not require a sandbox extension.
     @discardableResult
     public func withSecurityScopedAccess<T>(_ body: () throws -> T) rethrows -> T {
@@ -28,7 +28,7 @@ extension URL {
     /// in the `defer` block when the function returns, regardless of suspension.
     ///
     /// Runs on the caller's actor rather than hopping off it, so a body touching isolated state
-    /// stays legal — an actor calling this would otherwise be sending a non-`Sendable` closure.
+    /// stays legal - an actor calling this would otherwise be sending a non-`Sendable` closure.
     @discardableResult
     public func withSecurityScopedAccess<T>(
         isolation: isolated (any Actor)? = #isolation,

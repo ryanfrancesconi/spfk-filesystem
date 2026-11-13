@@ -11,7 +11,7 @@
     /// ``FileLockState`` and the `URL` API over it.
     ///
     /// `FileLockTests` pins what the platform does; this pins what the type makes of it. The pair
-    /// that matters is ``FileLockState/locked`` against ``FileLockState/notPermitted`` — both read
+    /// that matters is ``FileLockState/locked`` against ``FileLockState/notPermitted`` - both read
     /// `isWritable == false`, and only the first is something the app can offer to clear.
     ///
     /// - Note: ``FileLockState/readOnlyVolume`` is not covered. Reaching it means mounting a real
@@ -79,7 +79,7 @@
         }
 
         /// `resourceValues` throws for a file that is not there, and this type answers `.writable`
-        /// rather than inventing a permissions failure — the products already carry `isMissing`,
+        /// rather than inventing a permissions failure - the products already carry `isMissing`,
         /// and a save guard reporting "not writable" for a deleted file would name the wrong
         /// problem.
         @Test func aMissingFileIsWritable() throws {

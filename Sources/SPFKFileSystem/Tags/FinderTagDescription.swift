@@ -3,7 +3,7 @@
 #if os(macOS)
     import Foundation
 
-    /// Describes a single Finder tag — either a standard color label or a custom text tag.
+    /// Describes a single Finder tag - either a standard color label or a custom text tag.
     ///
     /// **macOS only** (`#if os(macOS)`).
     ///

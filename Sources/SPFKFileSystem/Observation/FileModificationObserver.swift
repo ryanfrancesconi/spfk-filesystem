@@ -114,7 +114,7 @@
         /// `kFSEventStreamCreateFlagIgnoreSelf` to avoid reacting to changes made by
         /// the current process.
         ///
-        /// Idempotent — calling `start()` while already observing is a no-op.
+        /// Idempotent - calling `start()` while already observing is a no-op.
         public func start() {
             guard stream == nil else { return }
             guard directoryIndex.isNotEmpty else { return }

@@ -13,7 +13,7 @@ import SPFKBase
 /// until file sizes stabilize (``stabilizationChecks`` consecutive unchanged snapshots),
 /// then diffs against the previous contents to produce ``DirectoryEvent`` values.
 ///
-/// This observer monitors only the **immediate children** of a single directory — it is not
+/// This observer monitors only the **immediate children** of a single directory - it is not
 /// recursive. For recursive monitoring, use one of the higher-level options:
 ///
 /// - ``DirectoryEnumerationObserver`` (cross-platform): Creates one `DirectoryObserver` per
@@ -88,7 +88,7 @@ public actor DirectoryObserver {
     /// Begins monitoring the directory for file system changes.
     ///
     /// Opens a file descriptor on the directory and schedules a `DispatchSource` to receive
-    /// kernel notifications. Idempotent — calling `start()` while already watching is a no-op.
+    /// kernel notifications. Idempotent - calling `start()` while already watching is a no-op.
     ///
     /// - Throws: If the file descriptor cannot be opened (e.g., permissions).
     public func start() throws {

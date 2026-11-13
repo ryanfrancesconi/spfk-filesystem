@@ -9,7 +9,7 @@
 
     @testable import SPFKFileSystem
 
-    /// The `uchg` BSD flag — Finder's Get Info **"Locked"** checkbox.
+    /// The `uchg` BSD flag - Finder's Get Info **"Locked"** checkbox.
     ///
     /// A locked file reads perfectly and refuses every write, including the extended-attribute
     /// write Finder tags travel in. Nothing reports the flag on its own: `fopen("rb+")` returns
@@ -39,7 +39,7 @@
 
         /// Why the state cannot be a `Bool`. A file the owner has made read-only reports exactly
         /// the same `isWritable` as a locked one, and only the locked one is something an app can
-        /// offer to clear — so anything deciding whether to show an Unlock control has to read
+        /// offer to clear - so anything deciding whether to show an Unlock control has to read
         /// `isUserImmutable`, not `isWritable`.
         @Test func isWritableAloneCannotSayWhyAFileRefusesAWrite() throws {
             let file = try TemporaryFile()
@@ -76,7 +76,7 @@
         }
 
         /// Finder tags are an extended attribute, and `setxattr` fails with `EPERM` on a locked
-        /// file — so this reaches the tag write, not only the file's data stream.
+        /// file - so this reaches the tag write, not only the file's data stream.
         @Test func aLockedFileRefusesAFinderTagWrite() throws {
             let file = try TemporaryFile()
             defer { file.remove() }
@@ -149,7 +149,7 @@
 
     /// A throwaway file whose `uchg` flag the lock suites toggle.
     ///
-    /// Removal goes through here because the flag has to come off first — a locked temporary file
+    /// Removal goes through here because the flag has to come off first - a locked temporary file
     /// cannot be deleted, and one left behind stays undeletable.
     struct TemporaryFile {
         let url: URL

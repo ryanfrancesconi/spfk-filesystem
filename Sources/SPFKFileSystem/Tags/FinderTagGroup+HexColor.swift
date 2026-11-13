@@ -19,7 +19,7 @@
 
         /// Returns a `HexColor` derived from the first Finder label color (sorted by rawValue), or nil.
         ///
-        /// This does NOT check text-only hex tags — use ``hexColorTag`` for that.
+        /// This does NOT check text-only hex tags - use ``hexColorTag`` for that.
         /// Sorting by rawValue gives Finder's internal label index order:
         /// gray(1), green(2), purple(3), blue(4), yellow(5), red(6), orange(7).
         public var hexColorFromLabel: HexColor? {

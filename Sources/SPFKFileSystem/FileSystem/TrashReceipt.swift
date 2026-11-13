@@ -8,7 +8,7 @@ import Foundation
 /// is already in the Trash gets a timestamp appended, so a redo cannot know in advance where its
 /// own undo will have to look. The undo engine registers the inverse action *before* the handler
 /// runs, so a redo has no way to hand a freshly computed value back into an already-registered
-/// undo — updating this shared reference is the only channel.
+/// undo - updating this shared reference is the only channel.
 @MainActor
 public final class TrashReceipt {
     public private(set) var trashURLs: [URL: URL]

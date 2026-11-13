@@ -11,8 +11,8 @@
 
     /// The Finder file gestures behind Rename, Duplicate and Move to Trash.
     ///
-    /// The trash cases reach the real `~/.Trash` — `NSWorkspace.recycle` has no sandbox to point
-    /// elsewhere — so every one of them puts the file back or deletes it before returning.
+    /// The trash cases reach the real `~/.Trash` - `NSWorkspace.recycle` has no sandbox to point
+    /// elsewhere - so every one of them puts the file back or deletes it before returning.
     @Suite(.tags(.file))
     @MainActor
     struct FileCommandsTests {
@@ -71,7 +71,7 @@
         }
 
         /// Case-insensitive APFS moves a file onto its own differently-cased name, so nothing here
-        /// may pre-check the destination for existence — that check would refuse a valid rename.
+        /// may pre-check the destination for existence - that check would refuse a valid rename.
         @Test func aCaseOnlyRenameSucceeds() throws {
             let dir = try Sandbox()
             defer { dir.remove() }
@@ -113,7 +113,7 @@
         /// The batch convention: a file that cannot be trashed is absent from the map and costs the
         /// rest of the selection nothing.
         ///
-        /// Also the guard on the completion-handler spelling — `NSWorkspace`'s `async` overload
+        /// Also the guard on the completion-handler spelling - `NSWorkspace`'s `async` overload
         /// throws here and hands back no map at all, having trashed the other two.
         @Test func moveToTrashSkipsALockedFileAndTrashesTheOthers() async throws {
             let dir = try Sandbox()
@@ -136,7 +136,7 @@
         }
 
         /// The one place a lock is cleared rather than refused. Without it, undoing a Duplicate of a
-        /// locked file fails — the copy inherits `uchg`, and `removeItem` refuses it.
+        /// locked file fails - the copy inherits `uchg`, and `removeItem` refuses it.
         @Test func deleteClearsTheLockAndRemovesTheFile() throws {
             let dir = try Sandbox()
             defer { dir.remove() }

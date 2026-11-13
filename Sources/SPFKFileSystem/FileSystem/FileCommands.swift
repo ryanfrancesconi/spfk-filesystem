@@ -31,7 +31,7 @@
         }
     }
 
-    /// The Finder's own file gestures — duplicate, trash, restore, rename — as one call each.
+    /// The Finder's own file gestures - duplicate, trash, restore, rename - as one call each.
     ///
     /// **`@MainActor` is load-bearing for ``duplicate(urls:)`` and ``moveToTrash(urls:)``.**
     /// `NSWorkspace` delivers their completion on the queue that made the call, so a detached task
@@ -41,7 +41,7 @@
     /// overloads, which lose a partial batch.** The handler receives a populated map *and* an
     /// error when some files succeeded and others did not; the generated `async` form resumes with
     /// the error alone, so the map naming what actually moved is gone while the files are moved
-    /// regardless. Measured on both calls — a trash of two writable files plus one locked one threw
+    /// regardless. Measured on both calls - a trash of two writable files plus one locked one threw
     /// with the two already in the Trash and no way to name them, which is exactly what an undo
     /// needs.
     ///
@@ -52,7 +52,7 @@
     /// ``restoreFromTrash(_:)`` and ``delete(urls:)`` return a map naming just the failures.
     @MainActor
     public enum FileCommands {
-        /// Finder-named copies beside each original — `Song.txt` becomes `Song copy.txt`, then
+        /// Finder-named copies beside each original - `Song.txt` becomes `Song copy.txt`, then
         /// `Song copy 2.txt`. Returns original → duplicate.
         ///
         /// A copy inherits the original's extended attributes, Finder tags and `uchg` flag.
@@ -69,7 +69,7 @@
 
         /// Returns original → its location in the Trash.
         ///
-        /// A locked file is simply absent from the map — the caller that wants to offer
+        /// A locked file is simply absent from the map - the caller that wants to offer
         /// unlock-and-retry checks the selection before calling rather than discovering it here.
         @discardableResult
         public static func moveToTrash(urls: [URL]) async throws -> [URL: URL] {
@@ -83,7 +83,7 @@
         }
 
         /// Moves each file back out of the Trash. Keys are original locations, values Trash
-        /// locations — the shape ``moveToTrash(urls:)`` returns.
+        /// locations - the shape ``moveToTrash(urls:)`` returns.
         ///
         /// Returns the failures only; an empty result means every file came back.
         @discardableResult
@@ -103,7 +103,7 @@
 
         /// Deletes outright, bypassing the Trash, clearing `uchg` first.
         ///
-        /// **Only for files the app itself created and is now taking back** — undoing a Duplicate is
+        /// **Only for files the app itself created and is now taking back** - undoing a Duplicate is
         /// the one caller. Clearing the user-immutable flag without asking is defensible only
         /// because the lock was inherited from the original moments ago, never set by the user on
         /// this file. `removeItem` refuses a locked file, and a duplicate of a locked file is
@@ -134,7 +134,7 @@
         /// In-place rename, returning the file's new URL.
         ///
         /// Validates before touching disk. A name with no extension keeps the original's, the way
-        /// Finder does — a user retyping a basename must not silently drop `.wav`.
+        /// Finder does - a user retyping a basename must not silently drop `.wav`.
         ///
         /// A case-only change succeeds on a case-insensitive volume, so the destination is never
         /// pre-checked for existence; a genuine collision comes back from the move as
@@ -184,7 +184,7 @@
         }
 
         /// `NSWorkspace` reports a partial batch as a populated map *and* an error, so the map wins
-        /// whenever it holds anything — the caller needs to see what did happen.
+        /// whenever it holds anything - the caller needs to see what did happen.
         private nonisolated static func partial(_ newURLs: [URL: URL], _ error: (any Error)?) -> Result<[URL: URL], any Error> {
             if newURLs.isEmpty, let error {
                 return .failure(error)

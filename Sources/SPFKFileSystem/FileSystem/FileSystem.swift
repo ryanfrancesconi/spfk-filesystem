@@ -8,9 +8,9 @@ import Foundation
 /// **Available on all Apple platforms** (macOS, iOS, tvOS, watchOS).
 ///
 /// Methods are organized into focused extensions:
-/// - ``mountedVolumes()`` / ``volumeURL(forFileURL:)`` — volume queries
-/// - ``scanFiles(in:recursive:width:includes:shouldStop:onFound:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` — file enumeration
-/// - ``deleteEmptyDirectories(in:)`` — cleanup
+/// - ``mountedVolumes()`` / ``volumeURL(forFileURL:)`` - volume queries
+/// - ``scanFiles(in:recursive:width:includes:shouldStop:onFound:)`` / ``enumerateDirectories(in:recursive:skipHidden:)`` - file enumeration
+/// - ``deleteEmptyDirectories(in:)`` - cleanup
 ///
 /// On macOS, additional methods for security-scoped file access and Finder tag management
 /// are available in ``SecureURLRegistry`` and the Tags extensions (``URL/tagNames``,

@@ -36,7 +36,7 @@ extension FileSystem {
     }
 
     /// Returns the next available URL, treating a name as taken when it exists on disk or
-    /// `isTaken` says so — for a caller whose claimed names compare other than by `URL` equality.
+    /// `isTaken` says so - for a caller whose claimed names compare other than by `URL` equality.
     public static func nextAvailableURL(
         _ url: URL,
         delimiter: String = "_",

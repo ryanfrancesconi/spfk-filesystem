@@ -90,10 +90,10 @@
         /// Starts observing the directory tree for file system changes.
         ///
         /// Creates an `FSEventStream` scheduled on the main dispatch queue with per-file event
-        /// granularity. Unlike ``DirectoryObserver/start()``, this method is non-throwing — if
+        /// granularity. Unlike ``DirectoryObserver/start()``, this method is non-throwing - if
         /// stream creation fails, an error is logged and no events will be delivered.
         ///
-        /// Idempotent — calling `start()` while already observing is a no-op.
+        /// Idempotent - calling `start()` while already observing is a no-op.
         public func start() {
             guard stream == nil else { return }
 

@@ -8,7 +8,7 @@
 
     @testable import SPFKFileSystem
 
-    /// Tests for FinderTagGroup and FinderTagDescription — Codable round-trips,
+    /// Tests for FinderTagGroup and FinderTagDescription - Codable round-trips,
     /// computed properties, mutating methods, and edge cases.
     @Suite
     final class FinderTagGroupTests {

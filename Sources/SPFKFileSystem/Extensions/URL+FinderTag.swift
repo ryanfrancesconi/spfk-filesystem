@@ -13,7 +13,7 @@
     /// These properties and methods read and write the
     /// `com.apple.metadata:_kMDItemUserTags` extended attribute, which is the
     /// storage mechanism macOS Finder uses for both built-in color labels and
-    /// custom text tags. Each tag is stored as a property-list–encoded string
+    /// custom text tags. Each tag is stored as a property-list-encoded string
     /// array; color tags use the format `"Color\nIndex"` (e.g., `"Red\n6"`),
     /// while text-only tags are bare strings.
     ///
@@ -32,7 +32,7 @@
 
         /// The legacy Finder label color for this file, if any.
         ///
-        /// macOS maintains a separate per-file label index (0–7) stored via
+        /// macOS maintains a separate per-file label index (0-7) stored via
         /// `URLResourceKey.labelNumberKey`. Finder displays this label even
         /// when the `_kMDItemUserTags` xattr doesn't include it. Returns
         /// `nil` when the label is `.none` (0) or unreadable.

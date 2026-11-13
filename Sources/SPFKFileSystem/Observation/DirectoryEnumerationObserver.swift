@@ -9,7 +9,7 @@ import SPFKBase
 /// events debounced into batches.
 ///
 /// > Warning: Each subdirectory costs a file descriptor and a `DispatchSource`. Prefer
-/// > ``FSEventsDirectoryObserver`` for a large tree — it uses one `FSEventStream`.
+/// > ``FSEventsDirectoryObserver`` for a large tree - it uses one `FSEventStream`.
 ///
 /// ## Usage
 ///
@@ -24,13 +24,13 @@ import SPFKBase
 ///
 /// Events pass through several stages before reaching the delegate, each adding latency:
 ///
-/// 1. **kqueue notification** — kernel delivers the initial directory-change signal (near-instant).
-/// 2. **Stabilization polling** — ``DirectoryObserver`` polls file sizes every 0.25 s until they
-///    are stable for 1 consecutive check (~0.25–0.5 s).
-/// 3. **Event debounce** — ``ObservationData`` collects events from all subdirectory observers
+/// 1. **kqueue notification** - kernel delivers the initial directory-change signal (near-instant).
+/// 2. **Stabilization polling** - ``DirectoryObserver`` polls file sizes every 0.25 s until they
+///    are stable for 1 consecutive check (~0.25-0.5 s).
+/// 3. **Event debounce** - ``ObservationData`` collects events from all subdirectory observers
 ///    and coalesces them over a 0.3 s window before delivering a batch.
 ///
-/// **Typical total latency: ~0.8–1.0 s** from filesystem change to delegate callback.
+/// **Typical total latency: ~0.8-1.0 s** from filesystem change to delegate callback.
 /// When many files are written concurrently, stabilization may take additional poll cycles.
 /// Tests observing this class should allow at least 2 s for events to arrive.
 ///
@@ -64,7 +64,7 @@ public final class DirectoryEnumerationObserver: Sendable {
     /// Begins recursive observation by creating a ``DirectoryObserver`` for each subdirectory.
     ///
     /// Performs a deep enumeration to discover all subdirectories, then starts monitoring each one.
-    /// Idempotent — calling `start()` while already observing is a no-op.
+    /// Idempotent - calling `start()` while already observing is a no-op.
     public func start() async throws {
         guard await !storage.isObserving else { return }
 

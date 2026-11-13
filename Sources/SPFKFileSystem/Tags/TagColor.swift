@@ -12,7 +12,7 @@
     ///
     /// **macOS only** (`#if os(macOS)`).
     ///
-    /// Raw values match the Finder's internal label indices (0–7). The ``dataElement`` property
+    /// Raw values match the Finder's internal label indices (0-7). The ``dataElement`` property
     /// produces the string format stored in the `com.apple.metadata:_kMDItemUserTags` extended
     /// attribute, and ``nsColor`` / ``cgColor`` provide the display colors sourced from
     /// `NSWorkspace.shared.fileLabelColors`.

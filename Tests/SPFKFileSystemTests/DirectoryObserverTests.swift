@@ -88,7 +88,7 @@ final class DirectoryObserverTests: BinTestCase {
         try await observer.start()
         await observer.stop()
 
-        // Copy files after stopping — should not be detected
+        // Copy files after stopping - should not be detected
         let urls = TestBundleResources.shared.formats
         _ = try copy(to: bin, urls: urls)
 
