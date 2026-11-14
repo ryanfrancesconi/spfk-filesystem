@@ -56,9 +56,13 @@ extension FileSystem {
     /// - Parameter url: A file URL to look up.
     /// - Returns: The volume URL, or `nil` if no matching volume is found.
     public static func volumeURL(forFileURL url: URL) -> URL? {
+        volumeURL(forFileURL: url, among: mountedVolumes())
+    }
+
+    static func volumeURL(forFileURL url: URL, among volumes: [URL]) -> URL? {
         let isExternal = url.pathComponents.contains("Volumes")
 
-        var volumes = mountedVolumes()
+        var volumes = volumes
 
         if isExternal {
             volumes = volumes.filter {
@@ -66,8 +70,12 @@ extension FileSystem {
             }
         }
 
-        return volumes.first {
-            url.path.hasPrefix($0.path)
-        }
+        // By whole components, so `/Volumes/ADD` does not claim `/Volumes/ADD2`; the deepest
+        // match wins over an enclosing mount such as `/`.
+        let components = url.standardizedFileURL.pathComponents
+
+        return volumes
+            .filter { components.starts(with: $0.standardizedFileURL.pathComponents) }
+            .max { $0.pathComponents.count < $1.pathComponents.count }
     }
 }
