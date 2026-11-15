@@ -59,7 +59,9 @@ extension FileSystem {
         volumeURL(forFileURL: url, among: mountedVolumes())
     }
 
-    static func volumeURL(forFileURL url: URL, among volumes: [URL]) -> URL? {
+    /// ``volumeURL(forFileURL:)`` against a list of volumes read once, for a caller asking about
+    /// many URLs.
+    public static func volumeURL(forFileURL url: URL, among volumes: [URL]) -> URL? {
         let isExternal = url.pathComponents.contains("Volumes")
 
         var volumes = volumes
