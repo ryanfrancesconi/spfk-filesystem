@@ -20,7 +20,7 @@ public struct OriginalsStore: Sendable, Equatable {
 
     public init(root: URL, product: String, productIdentifier: String = Bundle.main.bundleIdentifier ?? "") {
         self.root = root.standardizedFileURL
-        attributeName = "com.spongefork.original.\(product)"
+        attributeName = Self.attributePrefix + product
         self.productIdentifier = productIdentifier
     }
 

@@ -60,6 +60,25 @@ final class OriginalsStoreTests: BinTestCase {
         #expect(try FileXattrs.value(store.attributeName, of: kept.url) == nil)
     }
 
+    /// A copy written as a new file drops every product's mark and keeps the file's other attributes.
+    @Test func removingMarksLeavesACopyWithNoOriginal() throws {
+        let url = try file()
+        let other = OriginalsStore(root: bin.appendingPathComponent("Other"), product: "other")
+        _ = try store.keep(url)
+        _ = try other.keep(url)
+        try url.setExtendedAttribute(name: "com.example.keep", value: Data("x".utf8))
+
+        try OriginalsStore.removeMarks(from: url)
+
+        #expect(store.original(for: url) == nil)
+        #expect(other.original(for: url) == nil)
+        #expect(try FileXattrs.value("com.example.keep", of: url) == Data("x".utf8))
+    }
+
+    @Test func removingMarksFromAnUnmarkedFileDoesNothing() throws {
+        try OriginalsStore.removeMarks(from: try file())
+    }
+
     @Test func keepingLeavesTheModificationDateAlone() throws {
         let url = try file()
         let date = Date(timeIntervalSince1970: 1_000_000_000)
