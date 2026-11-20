@@ -53,37 +53,43 @@
     @MainActor
     public enum FileCommands {
         /// Finder-named copies beside each original - `Song.txt` becomes `Song copy.txt`, then
-        /// `Song copy 2.txt`. Returns original → duplicate.
+        /// `Song copy 2.txt` - each with a copy of its companions named after it.
         ///
-        /// A copy inherits the original's extended attributes, Finder tags and `uchg` flag.
+        /// A copy inherits the original's extended attributes, Finder tags and `uchg` flag. A
+        /// companion whose name is taken is skipped, never overwritten.
         @discardableResult
-        public static func duplicate(urls: [URL]) async throws -> [URL: URL] {
-            guard urls.isNotEmpty else { return [:] }
+        public static func duplicate(urls: [URL]) async throws -> FileDuplicates {
+            guard urls.isNotEmpty else { return FileDuplicates() }
 
-            return try await withCheckedThrowingContinuation { continuation in
+            let copies = try await withCheckedThrowingContinuation { continuation in
                 NSWorkspace.shared.duplicate(urls) { newURLs, error in
                     continuation.resume(with: Self.partial(newURLs, error))
                 }
             }
+
+            return duplicatingCompanions(of: copies)
         }
 
-        /// Returns original → its location in the Trash.
+        /// Returns original → its location in the Trash, companions included under their own URLs.
         ///
         /// A locked file is simply absent from the map - the caller that wants to offer
         /// unlock-and-retry checks the selection before calling rather than discovering it here.
+        /// Its companions stay with it.
         @discardableResult
         public static func moveToTrash(urls: [URL]) async throws -> [URL: URL] {
             guard urls.isNotEmpty else { return [:] }
 
+            let all = withCompanions(urls)
+
             return try await withCheckedThrowingContinuation { continuation in
-                NSWorkspace.shared.recycle(urls) { newURLs, error in
+                NSWorkspace.shared.recycle(all) { newURLs, error in
                     continuation.resume(with: Self.partial(newURLs, error))
                 }
             }
         }
 
         /// Moves each file back out of the Trash. Keys are original locations, values Trash
-        /// locations - the shape ``moveToTrash(urls:)`` returns.
+        /// locations - the shape ``moveToTrash(urls:)`` returns, companions included.
         ///
         /// Returns the failures only; an empty result means every file came back.
         @discardableResult
@@ -101,7 +107,8 @@
             return failures
         }
 
-        /// Deletes outright, bypassing the Trash, clearing `uchg` first.
+        /// Deletes outright, bypassing the Trash, clearing `uchg` first. Deletes only the URLs
+        /// given: a companion is listed by the caller, from ``FileDuplicates/companions``.
         ///
         /// **Only for files the app itself created and is now taking back** - undoing a Duplicate is
         /// the one caller. Clearing the user-immutable flag without asking is defensible only
@@ -131,7 +138,8 @@
             return failures
         }
 
-        /// In-place rename, returning the file's new URL.
+        /// In-place rename, returning the file's new URL. Companions are renamed to the new base
+        /// name, keeping their own extensions; one whose new name is taken stays as it was.
         ///
         /// Validates before touching disk. A name with no extension keeps the original's, the way
         /// Finder does - a user retyping a basename must not silently drop `.wav`.
@@ -146,6 +154,8 @@
             guard destination != url else { return url }
             guard !url.isLocked else { throw FileCommandError.locked(url) }
 
+            let companions = url.existingCompanionURLs
+
             do {
                 try url.withSecurityScopedAccess {
                     try FileManager.default.moveItem(at: url, to: destination)
@@ -153,6 +163,8 @@
             } catch let error as NSError where error.code == NSFileWriteFileExistsError {
                 throw FileCommandError.nameInUse(destination)
             }
+
+            moveCompanions(companions, toOwner: destination)
 
             return destination
         }

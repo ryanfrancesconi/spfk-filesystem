@@ -181,12 +181,12 @@
             let file = try dir.file(named: "Song.txt", contents: "payload")
 
             let first = try await FileCommands.duplicate(urls: [file])
-            #expect(first[file]?.lastPathComponent == "Song copy.txt")
+            #expect(first.copies[file]?.lastPathComponent == "Song copy.txt")
 
             let second = try await FileCommands.duplicate(urls: [file])
-            #expect(second[file]?.lastPathComponent == "Song copy 2.txt")
+            #expect(second.copies[file]?.lastPathComponent == "Song copy 2.txt")
 
-            let copy = try #require(first[file])
+            let copy = try #require(first.copies[file])
             #expect(try String(contentsOf: copy, encoding: .utf8) == "payload")
         }
 
@@ -198,13 +198,13 @@
             try file.set(tagNames: ["Blue"])
 
             let copies = try await FileCommands.duplicate(urls: [file])
-            let copy = try #require(copies[file])
+            let copy = try #require(copies.copies[file])
 
             #expect(copy.tagNames.contains("Blue"))
         }
 
         @Test func anEmptyBatchIsNotAnError() async throws {
-            #expect(try await FileCommands.duplicate(urls: []).isEmpty)
+            #expect(try await FileCommands.duplicate(urls: []) == FileDuplicates())
             #expect(try await FileCommands.moveToTrash(urls: []).isEmpty)
             #expect(FileCommands.delete(urls: []).isEmpty)
             #expect(FileCommands.restoreFromTrash([:]).isEmpty)
