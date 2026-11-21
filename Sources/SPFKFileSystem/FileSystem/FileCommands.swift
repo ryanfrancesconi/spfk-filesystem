@@ -16,8 +16,14 @@
         /// Something already occupies the destination.
         case nameInUse(URL)
 
+        /// Something already occupies a companion's destination.
+        case companionNameInUse(URL)
+
         /// The file carries the `uchg` flag, which refuses a rename.
         case locked(URL)
+
+        /// A rename failed partway and the file at the first URL could not be moved back to the second.
+        case rollbackFailed(URL, original: URL)
 
         public var errorDescription: String? {
             switch self {
@@ -25,8 +31,12 @@
                 localized("That name can't be used. Names cannot be empty or contain a slash.")
             case let .nameInUse(url):
                 localized("An item named \"\(url.lastPathComponent)\" already exists in this location.")
+            case let .companionNameInUse(url):
+                localized("A sidecar named \"\(url.lastPathComponent)\" already exists in this location.")
             case let .locked(url):
                 localized("\"\(url.lastPathComponent)\" is locked. Unlock it to rename it.")
+            case let .rollbackFailed(url, original):
+                localized("The rename failed, and \"\(url.lastPathComponent)\" couldn't be renamed back to \"\(original.lastPathComponent)\".")
             }
         }
     }
@@ -139,34 +149,17 @@
         }
 
         /// In-place rename, returning the file's new URL. Companions are renamed to the new base
-        /// name, keeping their own extensions; one whose new name is taken stays as it was.
+        /// name, keeping their own extensions, and a companion name held by another file refuses
+        /// the rename before anything moves.
         ///
-        /// Validates before touching disk. A name with no extension keeps the original's, the way
-        /// Finder does - a user retyping a basename must not silently drop `.wav`.
-        ///
-        /// A case-only change succeeds on a case-insensitive volume, so the destination is never
-        /// pre-checked for existence; a genuine collision comes back from the move as
-        /// ``FileCommandError/nameInUse(_:)``.
+        /// A name with no extension keeps the original's, the way Finder does - a user retyping a
+        /// basename must not silently drop `.wav`. A case-only change succeeds on a case-insensitive
+        /// volume. The one-entry case of ``renameAll(_:rollingBackOnFailure:)``.
         @discardableResult
         public static func rename(_ url: URL, to newName: String) throws -> URL {
             let destination = try renameDestination(for: url, newName: newName)
 
-            guard destination != url else { return url }
-            guard !url.isLocked else { throw FileCommandError.locked(url) }
-
-            let companions = url.existingCompanionURLs
-
-            do {
-                try url.withSecurityScopedAccess {
-                    try FileManager.default.moveItem(at: url, to: destination)
-                }
-            } catch let error as NSError where error.code == NSFileWriteFileExistsError {
-                throw FileCommandError.nameInUse(destination)
-            }
-
-            moveCompanions(companions, toOwner: destination)
-
-            return destination
+            return try renameAll([url: destination], rollingBackOnFailure: true).renamed[url] ?? url
         }
 
         /// The URL ``rename(_:to:)`` would move to, or a throw describing why it cannot.

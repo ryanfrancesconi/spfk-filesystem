@@ -71,23 +71,6 @@
 
             return all
         }
-
-        /// Moves each companion to `owner`'s base name. The owner has already moved, so a failure
-        /// is logged rather than thrown.
-        static func moveCompanions(_ companions: [URL], toOwner owner: URL) {
-            for companion in companions {
-                let destination = companion.companionDestination(forOwner: owner)
-                guard destination != companion else { continue }
-
-                do {
-                    try companion.withSecurityScopedAccess {
-                        try FileManager.default.moveItem(at: companion, to: destination)
-                    }
-                } catch {
-                    Log.error("Couldn't rename \(companion.lastPathComponent) to \(destination.lastPathComponent)", error)
-                }
-            }
-        }
     }
 
 #endif

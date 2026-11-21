@@ -67,18 +67,53 @@
             #expect(try Set(dir.names()) == ["Harbor.RAF", "Harbor.XMP"])
         }
 
-        @Test func renameLeavesATakenSidecarNameAlone() throws {
+        @Test func renameRefusesASidecarNameHeldByAnotherFileAndMovesNothing() throws {
             let dir = try Sandbox()
             defer { dir.remove() }
 
-            let raw = try dir.file(named: "DSCF3303.RAF")
-            _ = try dir.file(named: "DSCF3303.xmp", contents: "mine")
-            let taken = try dir.file(named: "Harbor.xmp", contents: "theirs")
+            let raw = try dir.file(named: "A.RAF", contents: "raw")
+            let sidecar = try dir.file(named: "A.xmp", contents: "mine")
+            let taken = try dir.file(named: "B.xmp", contents: "theirs")
 
-            try FileCommands.rename(raw, to: "Harbor")
+            #expect(throws: FileCommandError.companionNameInUse(taken)) {
+                try FileCommands.rename(raw, to: "B")
+            }
 
-            #expect(try Set(dir.names()) == ["Harbor.RAF", "Harbor.xmp", "DSCF3303.xmp"])
+            #expect(try Set(dir.names()) == ["A.RAF", "A.xmp", "B.xmp"])
+            #expect(try String(contentsOf: raw, encoding: .utf8) == "raw")
+            #expect(try String(contentsOf: sidecar, encoding: .utf8) == "mine")
             #expect(try String(contentsOf: taken, encoding: .utf8) == "theirs")
+        }
+
+        /// On a case-insensitive volume the sidecar's new name finds the sidecar itself.
+        @Test func aCaseOnlyRenameCarriesTheSidecar() throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let raw = try dir.file(named: "a.RAF")
+            _ = try dir.file(named: "a.xmp", contents: "sidecar")
+
+            let renamed = try FileCommands.rename(raw, to: "A")
+
+            #expect(renamed.lastPathComponent == "A.RAF")
+            #expect(try Set(dir.names()) == ["A.RAF", "A.xmp"])
+            #expect(try String(contentsOf: dir.url.appendingPathComponent("A.xmp"), encoding: .utf8) == "sidecar")
+        }
+
+        /// A sidecar that refuses the move after the check passed sends the photo back.
+        @Test func aSidecarThatCannotMoveSendsThePhotoBack() throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let raw = try dir.file(named: "A.RAF")
+            let sidecar = try dir.file(named: "A.xmp")
+            try sidecar.lock()
+
+            #expect(throws: (any Error).self) {
+                try FileCommands.rename(raw, to: "B")
+            }
+
+            #expect(try Set(dir.names()) == ["A.RAF", "A.xmp"])
         }
 
         @Test func renameWithoutASidecarBehavesAsBefore() throws {
