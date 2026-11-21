@@ -351,6 +351,76 @@
         }
       }
     },
+    "A sidecar named \"%@\" already exists in this location." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Filialdatei namens \"%@\" existiert an diesem Ort bereits."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sidecar named \"%@\" already exists in this location."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya existe un archivo sidecar con el nombre \"%@\" en esta ubicación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un fichier annexe nommé « %@ » existe déjà à cet emplacement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un file collaterale denominato \"%@\" esiste già in questa posizione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」という名前のサイドカーファイルはこの場所にすでに存在します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\"(이)라는 이름의 사이드카 파일이 이 위치에 이미 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Er bestaat al een sidecar-bestand met de naam \"%@\" op deze locatie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um arquivo sidecar chamado \"%@\" já existe neste local."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сопутствующий файл с именем «%@» уже существует в этом месте."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此位置已存在名为“%@”的附属文件。"
+          }
+        }
+      }
+    },
     "An item named \"%@\" already exists in this location." : {
       "localizations" : {
         "de" : {
@@ -907,6 +977,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法使用该名称。名称不能为空，也不能包含斜杠。"
+          }
+        }
+      }
+    },
+    "The rename failed, and \"%@\" couldn't be renamed back to \"%@\"." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Umbenennen ist fehlgeschlagen, und \"%1$@\" konnte nicht wieder in \"%2$@\" umbenannt werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The rename failed, and \"%1$@\" couldn't be renamed back to \"%2$@\"."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo cambiar el nombre, y \"%1$@\" no se pudo volver a llamar \"%2$@\"."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le changement de nom a échoué, et « %1$@ » n’a pas pu être renommé à nouveau en « %2$@ »."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La ridenominazione non è riuscita e non è stato possibile rinominare di nuovo \"%1$@\" in \"%2$@\"."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前の変更に失敗し、「%1$@」の名前を「%2$@」に戻せませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름 변경에 실패했으며 \"%1$@\"의 이름을 \"%2$@\"(으)로 되돌릴 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De naamswijziging is mislukt en \"%1$@\" kon niet worden teruggezet naar \"%2$@\"."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível renomear, e \"%1$@\" não pôde voltar a se chamar \"%2$@\"."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось переименовать, и «%1$@» не удалось вернуть прежнее имя «%2$@»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名失败，且无法将“%1$@”改回“%2$@”。"
           }
         }
       }
