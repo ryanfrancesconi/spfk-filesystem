@@ -11,7 +11,7 @@
 
     /// A RAW's XMP sidecar travelling with it through Rename, Duplicate, Move to Trash and their
     /// inverses. The files are not RAW: the rule is by extension.
-    @Suite(.tags(.file, .xmpSidecar))
+    @Suite(.tags(.file, .xmpSidecar, .renameOrganize))
     @MainActor
     struct FileCommandsCompanionTests {
         typealias Sandbox = FileCommandsTests.Sandbox

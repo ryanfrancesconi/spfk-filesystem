@@ -10,7 +10,7 @@
     @testable import SPFKFileSystem
 
     /// A rename set that reuses its own names, with a RAW's sidecar travelling beside each file.
-    @Suite(.tags(.file, .xmpSidecar))
+    @Suite(.tags(.file, .xmpSidecar, .renameOrganize))
     @MainActor
     struct FileCommandsRenameAllTests {
         typealias Sandbox = FileCommandsTests.Sandbox
