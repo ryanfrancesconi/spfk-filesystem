@@ -200,6 +200,18 @@ final class OriginalsStoreTests: BinTestCase {
         #expect(store.original(for: renamed) == kept)
     }
 
+    @Test func theMarkFollowsAMoveIntoAnotherFolder() throws {
+        let url = try file()
+        let kept = try #require(try store.keep(url))
+        let folder = url.deletingLastPathComponent().appendingPathComponent("2026/05", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let moved = folder.appendingPathComponent("2026-05-24 kick.wav")
+
+        try FileManager.default.moveItem(at: url, to: moved)
+
+        #expect(store.original(for: moved) == kept)
+    }
+
     @Test func aCopyOfTheFileSharesItsOriginal() throws {
         let url = try file()
         let kept = try #require(try store.keep(url))
