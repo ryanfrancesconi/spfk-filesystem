@@ -22,14 +22,14 @@
         /// ``move(_:rollingBackOnFailure:)`` would start moving files.
         ///
         /// A conflict depends on the rest of the set, so dropping a group can expose another.
-        public static func moveConflicts(in plan: MovePlan) -> [URL: FileCommandError] {
+        public nonisolated static func moveConflicts(in plan: MovePlan) -> [URL: FileCommandError] {
             executionPlan(plan.groups).conflicts
         }
 
         // MARK: - Engine
 
         /// - Parameter conflicts: refusals already decided, whose groups are left out.
-        static func executionPlan(_ groups: [MovePlan.Group], conflicts: [URL: FileCommandError] = [:]) -> MoveExecutionPlan {
+        nonisolated static func executionPlan(_ groups: [MovePlan.Group], conflicts: [URL: FileCommandError] = [:]) -> MoveExecutionPlan {
             var plan = MoveExecutionPlan(conflicts: conflicts)
 
             for group in groups where group.source != group.destination && plan.conflicts[group.source] == nil {
