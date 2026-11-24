@@ -217,8 +217,13 @@
                 }
 
                 for url in missing.reversed() {
-                    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
-                    created.append(url)
+                    do {
+                        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+                        created.append(url)
+                    } catch let error as CocoaError where error.code == .fileWriteFileExists && url.isDirectory {
+                        // Made by someone else since the check; it is not this run's to remove.
+                        continue
+                    }
                 }
             }
 
