@@ -24,9 +24,10 @@
             done: [Int] = [],
             final: Bool = false,
             rolledBack: [Int]? = nil,
-            tail: String = ""
+            tail: String = "",
+            operation: MoveOperation = .move
         ) throws -> URL {
-            let log = try MoveRunLog.create(in: dir.url.appendingPathComponent("Journals"), context: Data("ctx".utf8))
+            let log = try MoveRunLog.create(in: dir.url.appendingPathComponent("Journals"), context: Data("ctx".utf8), operation: operation)
             var data = try Data(contentsOf: log.url)
 
             for (index, moves) in units.enumerated() {

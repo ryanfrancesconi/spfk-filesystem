@@ -5,8 +5,9 @@
     import Foundation
     import SPFKBase
 
-    /// An on-disk record of one ``FileCommands/move(_:rollingBackOnFailure:log:progress:)`` run, so a
-    /// run the app never finished following can be finished at the next launch.
+    /// An on-disk record of one ``FileCommands/move(_:rollingBackOnFailure:log:progress:)`` or
+    /// ``FileCommands/copy(_:rollingBackOnFailure:log:progress:)`` run, so a run the app never
+    /// finished following can be finished, or a copy's partial files removed, at the next launch.
     ///
     /// One JSON-lines file per run: a header, every group's moves before the first one is made,
     /// the groups finished in batches, a marker when parked groups start finishing, and an end
@@ -28,7 +29,7 @@
         /// Starts a journal in `directory`, creating the folder if needed.
         ///
         /// - Parameter context: what the caller needs to follow the run later; opaque here.
-        public static func create(in directory: URL, context: Data) throws -> MoveRunLog {
+        public static func create(in directory: URL, context: Data, operation: MoveOperation = .move) throws -> MoveRunLog {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
             let run = UUID()
@@ -39,7 +40,9 @@
             }
 
             let log = try MoveRunLog(url: url, handle: FileHandle(forWritingTo: url))
-            try log.write(Record(kind: .header, version: 1, run: run, created: Date(), context: context))
+            // A move writes no operation, so a journal from before copies reads the same.
+            let recorded: MoveOperation? = operation == .move ? nil : operation
+            try log.write(Record(kind: .header, version: 1, run: run, created: Date(), context: context, operation: recorded))
 
             return log
         }
@@ -158,6 +161,9 @@
             var run: UUID?
             var created: Date?
             var context: Data?
+
+            /// Absent for a move.
+            var operation: MoveOperation?
             var index: Int?
             var moves: [Step]?
             var units: [Int]?

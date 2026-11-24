@@ -22,8 +22,16 @@
         /// that is free, else back; then its companions join the owner, wherever it ended. The
         /// answer is appended to the journal, so a second recovery returns it without touching
         /// the disk. A step that can go neither way is left where it is and logged.
+        ///
+        /// A copy's journal moves nothing: each unfinished group's staged files, which may be
+        /// partial, are deleted, and the copies renamed into place stay.
         public static func recover(at url: URL) throws -> RecoveredMoves {
             let journal = try Contents(reading: url)
+
+            if journal.operation == .copy {
+                if journal.rolledBack == nil { removeStagedCopies(journal) }
+                return RecoveredMoves(context: journal.context, moves: FileMoves())
+            }
 
             if let rolledBack = journal.rolledBack {
                 let moved = journal.done.subtracting(rolledBack)
@@ -68,6 +76,21 @@
         }
 
         // MARK: - Disk
+
+        private static func removeStagedCopies(_ journal: Contents) {
+            for (index, steps) in journal.units where !journal.done.contains(index) {
+                for path in steps.compactMap(\.staging) where exists(path) {
+                    let url = URL(fileURLWithPath: path)
+
+                    do {
+                        if url.isLocked { try url.unlock() }
+                        try FileManager.default.removeItem(at: url)
+                    } catch {
+                        Log.error("Couldn't remove \(path) while recovering an interrupted copy", error)
+                    }
+                }
+            }
+        }
 
         /// Settles one unfinished group on disk. Returns whether its owner ended at its destination.
         private static func settle(_ steps: [Record.Step], finalPhaseBegan: Bool) -> Bool {
@@ -150,6 +173,7 @@
 
         struct Contents {
             var context = Data()
+            var operation = MoveOperation.move
             var units: [Int: [Record.Step]] = [:]
             var done: Set<Int> = []
             var finalPhaseBegan = false
@@ -183,6 +207,7 @@
                     case .header:
                         sawHeader = true
                         context = record.context ?? Data()
+                        operation = record.operation ?? .move
                     case .unit:
                         if let index = record.index { units[index] = record.moves ?? [] }
                     case .done:

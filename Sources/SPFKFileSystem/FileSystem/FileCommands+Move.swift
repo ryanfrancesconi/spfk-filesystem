@@ -203,7 +203,7 @@
 
         /// Creates every destination folder that does not exist yet. Returns each one created,
         /// parents before children.
-        private nonisolated static func createDestinationFolders(for units: [MoveUnit]) throws -> [URL] {
+        nonisolated static func createDestinationFolders(for units: [MoveUnit]) throws -> [URL] {
             var created: [URL] = []
             var checked: Set<String> = []
 

@@ -3,8 +3,15 @@
 import Foundation
 import SPFKBase
 
+/// Whether a run moves its files or copies them, leaving the sources where they are.
+public enum MoveOperation: String, Sendable, Hashable, Codable {
+    case move
+    case copy
+}
+
 /// Where each file of a run goes, with its companions, decided before anything moves.
-/// ``FileCommands/move(_:rollingBackOnFailure:)`` carries it out.
+/// ``FileCommands/move(_:rollingBackOnFailure:log:progress:)`` or
+/// ``FileCommands/copy(_:rollingBackOnFailure:log:progress:)`` carries it out.
 public struct MovePlan: Sendable, Equatable {
     /// A companion's move, made with its owner's.
     public struct CompanionMove: Sendable, Hashable {
@@ -110,12 +117,13 @@ public enum MoveSkipReason: Sendable, Hashable {
     }
 }
 
-/// What ``FileCommands/move(_:rollingBackOnFailure:)`` did.
+/// What ``FileCommands/move(_:rollingBackOnFailure:log:progress:)`` or
+/// ``FileCommands/copy(_:rollingBackOnFailure:log:progress:)`` did.
 public struct FileMoves: Sendable {
-    /// Each group's source → where it went. Companions are in ``companions``.
+    /// Each group's source → where it went, or where its copy is. Companions are in ``companions``.
     public var moved: [URL: URL] = [:]
 
-    /// Each moved companion → where it went.
+    /// Each moved or copied companion → where it went.
     public var companions: [URL: URL] = [:]
 
     /// The folders the run created, parents before children.
