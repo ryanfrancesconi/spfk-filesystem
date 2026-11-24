@@ -79,6 +79,9 @@ public enum MoveSkipReason: Sendable, Hashable {
     /// The destination is held by a file outside the run.
     case nameInUse(URL)
 
+    /// Byte for byte the same as the earlier source taking the destination, so it stays.
+    case duplicate(of: URL)
+
     public var message: String {
         switch self {
         case .missing:
@@ -92,7 +95,7 @@ public enum MoveSkipReason: Sendable, Hashable {
         case .insidePackage:
             localized("The file is inside a package or a Photos library.")
         case .otherVolume:
-            localized("The destination is on another disk.")
+            localized("The file is on a different disk from the destination folder.")
         case .emptyName:
             localized("The template gives the file an empty name.")
         case .overByteCap:
@@ -101,6 +104,8 @@ public enum MoveSkipReason: Sendable, Hashable {
             localized("Two of the file's sidecars would take the same name.")
         case let .nameInUse(url):
             localized("An item named \"\(url.lastPathComponent)\" already exists in this location.")
+        case let .duplicate(url):
+            localized("An identical file, \"\(url.lastPathComponent)\", is already moving there.")
         }
     }
 }
