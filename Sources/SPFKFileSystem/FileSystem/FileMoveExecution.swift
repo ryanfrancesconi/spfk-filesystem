@@ -17,7 +17,7 @@
         let destination: URL
 
         /// The owner's move first.
-        let moves: [MoveStep]
+        var moves: [MoveStep]
 
         /// A destination is held by another file in the set, so this unit is parked under a
         /// temporary name until the rest have moved.
@@ -33,8 +33,12 @@
         let to: URL
         let isCompanion: Bool
 
+        /// Where a staged unit parks this file, fixed by the plan so a journal can name it before
+        /// anything moves.
+        var stagingURL: URL?
+
         func staging() -> MoveStep {
-            MoveStep(from: from, to: FileCommands.renameStagingURL(for: from), isCompanion: isCompanion)
+            MoveStep(from: from, to: stagingURL ?? FileCommands.renameStagingURL(for: from), isCompanion: isCompanion)
         }
 
         func fromStaging(_ staged: URL) -> MoveStep {
@@ -88,14 +92,18 @@
 
         /// The units that reached their destinations, in the order they did.
         private(set) var finished: [MoveUnit] = []
+
+        /// Each finished unit's index in the plan, matching ``finished``.
+        private(set) var finishedIndexes: [Int] = []
         private(set) var directSources: Set<URL> = []
 
         func stagedLocation(of url: URL) -> URL {
             staged[url] ?? url
         }
 
-        mutating func finish(_ unit: MoveUnit) {
+        mutating func finish(_ unit: MoveUnit, index: Int) {
             finished.append(unit)
+            finishedIndexes.append(index)
         }
 
         /// One unit's moves. A failure undoes this unit's own moves before rethrowing.
@@ -125,7 +133,9 @@
         mutating func rollBack(keepingDirect: Bool) -> FileCommandError? {
             let undone = done.filter { !(keepingDirect && $0.phase == .direct) }.map(\.move)
             done.removeAll { !(keepingDirect && $0.phase == .direct) }
-            finished.removeAll { !(keepingDirect && directSources.contains($0.source)) }
+            let kept = finished.map { keepingDirect && directSources.contains($0.source) }
+            finished = zip(finished, kept).filter(\.1).map(\.0)
+            finishedIndexes = zip(finishedIndexes, kept).filter(\.1).map(\.0)
 
             return Self.moveBack(undone)
         }

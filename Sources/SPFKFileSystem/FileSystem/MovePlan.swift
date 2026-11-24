@@ -125,10 +125,43 @@ public struct FileMoves: Sendable {
     /// where it began.
     public var failure: (any Error)?
 
+    /// The run's task was cancelled; ``failure`` is the `CancellationError`.
+    public var wasCancelled: Bool {
+        failure is CancellationError
+    }
+
     public init(moved: [URL: URL] = [:], companions: [URL: URL] = [:], createdFolders: [URL] = [], failure: (any Error)? = nil) {
         self.moved = moved
         self.companions = companions
         self.createdFolders = createdFolders
         self.failure = failure
+    }
+}
+
+/// The folders a move created and the ones it removed once emptied, so its undo can reverse both.
+public struct MovedFolders: Sendable, Hashable {
+    public var created: [URL]
+    public var removed: [URL]
+
+    public static let none = MovedFolders(created: [], removed: [])
+
+    public init(created: [URL], removed: [URL]) {
+        self.created = created
+        self.removed = removed
+    }
+
+    /// The undo's view: what the run removed, the undo recreates, and the reverse.
+    public var inverse: MovedFolders {
+        MovedFolders(created: removed, removed: created)
+    }
+}
+
+extension Dictionary where Key == URL, Value == URL {
+    /// Any file in the mapping changes folder.
+    public var movesAcrossFolders: Bool {
+        contains {
+            $0.key.deletingLastPathComponent().standardizedFileURL.path
+                != $0.value.deletingLastPathComponent().standardizedFileURL.path
+        }
     }
 }
