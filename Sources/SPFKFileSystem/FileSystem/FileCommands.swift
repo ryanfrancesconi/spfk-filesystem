@@ -82,7 +82,7 @@
                 }
             }
 
-            return duplicatingCompanions(of: copies)
+            return duplicatingCompanions(of: copies, companions: await FileCompanions.resolve(urls))
         }
 
         /// Returns original → its location in the Trash, companions included under their own URLs.
@@ -92,9 +92,14 @@
         /// Its companions stay with it.
         @discardableResult
         public static func moveToTrash(urls: [URL]) async throws -> [URL: URL] {
-            guard urls.isNotEmpty else { return [:] }
+            try await moveToTrash(trashSet: await trashSet(for: urls))
+        }
 
-            let all = withCompanions(urls)
+        /// Trashes exactly `trashSet`, as ``trashSet(for:)`` gave it, for a caller that needs the
+        /// set before the files move.
+        @discardableResult
+        public static func moveToTrash(trashSet all: [URL]) async throws -> [URL: URL] {
+            guard all.isNotEmpty else { return [:] }
 
             return try await withCheckedThrowingContinuation { continuation in
                 NSWorkspace.shared.recycle(all) { newURLs, error in

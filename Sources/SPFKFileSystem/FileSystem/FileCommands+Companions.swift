@@ -28,17 +28,19 @@
         /// Copies `source`'s companions beside `copy`, named after it. Never overwrites.
         ///
         /// For a caller recreating a copy itself, such as a Duplicate's redo.
-        public static func copyCompanions(from source: URL, toCopy copy: URL) -> FileDuplicates {
-            duplicatingCompanions(of: [source: copy])
+        public static func copyCompanions(from source: URL, toCopy copy: URL) async -> FileDuplicates {
+            duplicatingCompanions(of: [source: copy], companions: await FileCompanions.resolve([source]))
         }
 
-        static func duplicatingCompanions(of copies: [URL: URL]) -> FileDuplicates {
+        /// - Parameter companions: each original's, from ``FileCompanions/resolve(_:identifiers:)``.
+        static func duplicatingCompanions(of copies: [URL: URL], companions: [URL: [URL]]) -> FileDuplicates {
             var result = FileDuplicates(copies: copies)
 
             for (original, copy) in copies {
-                let found = original.existingCompanionURLs
+                // A companion that is itself a duplicated row has a copy of its own.
+                let own = (companions[original] ?? []).filter { copies[$0] == nil }
 
-                for (companion, destination) in zip(found, URL.companionDestinations(found, forOwner: copy)) {
+                for (companion, destination) in zip(own, URL.companionDestinations(own, forOwner: copy)) {
 
                     guard !FileManager.default.fileExists(atPath: destination.path) else {
                         Log.error("Skipped copying \(companion.lastPathComponent): \(destination.lastPathComponent) already exists")
@@ -59,13 +61,15 @@
             return result
         }
 
-        /// `urls` followed by the companions of each one not locked, without repeats.
-        static func withCompanions(_ urls: [URL]) -> [URL] {
+        /// What ``moveToTrash(urls:)`` sends to the Trash: `urls` followed by the companions of each
+        /// one not locked, a paired Live Photo movie included, without repeats.
+        public static func trashSet(for urls: [URL]) async -> [URL] {
             var seen = Set(urls)
             var all = urls
+            let companions = await FileCompanions.resolve(urls.filter { !$0.isLocked })
 
-            for url in urls where !url.isLocked {
-                for companion in url.existingCompanionURLs where seen.insert(companion).inserted {
+            for url in urls {
+                for companion in companions[url] ?? [] where seen.insert(companion).inserted {
                     all.append(companion)
                 }
             }
