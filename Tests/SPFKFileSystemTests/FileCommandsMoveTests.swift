@@ -201,6 +201,24 @@
             #expect(try Set(dir.names()) == ["A.jpg", "B.jpg"])
         }
 
+        /// Named as the file's own clash, not as a name some other file holds.
+        @Test func twoCompanionsTakingOneNameAreRefusedAsAClash() throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let movie = try dir.file(named: "A.MOV")
+            let first = try dir.file(named: "A.AAE")
+            let second = try dir.file(named: "B.AAE")
+            let shared = dir.url.appendingPathComponent("C.AAE")
+
+            let plan = MovePlan(entries: [
+                group(movie, dir.url.appendingPathComponent("C.MOV"), companions: [(first, shared), (second, shared)]),
+            ])
+
+            #expect(FileCommands.moveConflicts(in: plan) == [movie: .companionNameClash(shared)])
+            #expect(try Set(dir.names()) == ["A.MOV", "A.AAE", "B.AAE"])
+        }
+
         @Test func theStagingNameIsNeverARenderSiblingName() {
             let url = URL(fileURLWithPath: "/tmp/IMG_1234.HEIC")
 

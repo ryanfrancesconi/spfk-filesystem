@@ -19,6 +19,9 @@
         /// Something already occupies a companion's destination.
         case companionNameInUse(URL)
 
+        /// Two of the file's own companions would take this one name.
+        case companionNameClash(URL)
+
         /// The file carries the `uchg` flag, which refuses a rename.
         case locked(URL)
 
@@ -33,6 +36,8 @@
                 localized("An item named \"\(url.lastPathComponent)\" already exists in this location.")
             case let .companionNameInUse(url):
                 localized("A sidecar named \"\(url.lastPathComponent)\" already exists in this location.")
+            case let .companionNameClash(url):
+                localized("Two of this file's sidecars would both be named \"\(url.lastPathComponent)\".")
             case let .locked(url):
                 localized("\"\(url.lastPathComponent)\" is locked. Unlock it to rename it.")
             case let .rollbackFailed(url, original):

@@ -73,7 +73,7 @@ public enum MoveSkipReason: Sendable, Hashable {
     case emptyName
     case overByteCap
 
-    /// Two of the file's companions would take the one name, such as `IMG_1234.aae` and `IMG_O1234.aae`.
+    /// Two of the file's companions would take the one name.
     case companionNameClash
 
     /// The destination is held by a file outside the run.
@@ -98,7 +98,7 @@ public enum MoveSkipReason: Sendable, Hashable {
         case .overByteCap:
             localized("The new name is too long.")
         case .companionNameClash:
-            localized("Two of the file's edit records would take the same name.")
+            localized("Two of the file's sidecars would take the same name.")
         case let .nameInUse(url):
             localized("An item named \"\(url.lastPathComponent)\" already exists in this location.")
         }

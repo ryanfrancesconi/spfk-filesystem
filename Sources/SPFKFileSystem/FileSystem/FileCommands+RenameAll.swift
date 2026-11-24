@@ -54,8 +54,9 @@
                     continue
                 }
 
-                let companions = source.existingCompanionURLs.map {
-                    MovePlan.CompanionMove(from: $0, to: $0.companionDestination(forOwner: destination))
+                let found = source.existingCompanionURLs
+                let companions = zip(found, URL.companionDestinations(found, forOwner: destination)).map {
+                    MovePlan.CompanionMove(from: $0, to: $1)
                 }
 
                 groups.append(MovePlan.Group(source: source, destination: destination, companions: companions))

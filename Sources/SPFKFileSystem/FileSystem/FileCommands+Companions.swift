@@ -36,8 +36,9 @@
             var result = FileDuplicates(copies: copies)
 
             for (original, copy) in copies {
-                for companion in original.existingCompanionURLs {
-                    let destination = companion.companionDestination(forOwner: copy)
+                let found = original.existingCompanionURLs
+
+                for (companion, destination) in zip(found, URL.companionDestinations(found, forOwner: copy)) {
 
                     guard !FileManager.default.fileExists(atPath: destination.path) else {
                         Log.error("Skipped copying \(companion.lastPathComponent): \(destination.lastPathComponent) already exists")

@@ -55,18 +55,22 @@
             }
 
             let moving = MovingFiles(plan.units.flatMap { $0.moves.map(\.from) })
-            var claimed: Set<String> = []
+            var claimedBy: [String: URL] = [:]
 
             for index in plan.units.indices {
                 let source = plan.units[index].source
 
                 for move in plan.units[index].moves {
                     let conflict: FileCommandError = move.isCompanion ? .companionNameInUse(move.to) : .nameInUse(move.to)
+                    let path = move.to.standardizedFileURL.path
 
-                    guard claimed.insert(move.to.standardizedFileURL.path).inserted else {
-                        plan.conflicts[source] = plan.conflicts[source] ?? conflict
+                    if let claimant = claimedBy[path] {
+                        let refusal: FileCommandError = claimant == source ? .companionNameClash(move.to) : conflict
+                        plan.conflicts[source] = plan.conflicts[source] ?? refusal
                         continue
                     }
+
+                    claimedBy[path] = source
 
                     switch moving.occupant(of: move.to) {
                     case .none:
