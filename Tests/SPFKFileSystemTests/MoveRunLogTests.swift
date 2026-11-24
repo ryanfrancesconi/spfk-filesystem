@@ -31,7 +31,7 @@
             let (plan, _, _) = try FileMoveCancellationTests.directPlan(250, in: dir)
             let log = try MoveRunLog.create(in: Self.journals(in: dir), context: Data("ctx".utf8))
 
-            try await Task.detached {
+            _ = try await Task.detached {
                 try FileCommands.move(plan, rollingBackOnFailure: false, log: log)
             }.value
 
@@ -72,7 +72,7 @@
             let logURL = log.url
             let parkedWhileMoving = FileMoveCancellationTests.Reports()
 
-            try await Task.detached {
+            _ = try await Task.detached {
                 try FileCommands.move(plan, rollingBackOnFailure: false, log: log, progress: { finished, _ in
                     guard finished == 100 else { return }
 

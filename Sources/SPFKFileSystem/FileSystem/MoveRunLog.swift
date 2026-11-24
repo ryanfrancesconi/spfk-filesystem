@@ -64,7 +64,12 @@
         /// next launch, which is the safe side.
         public func remove() {
             try? handle.close()
+            Self.remove(at: url)
+        }
 
+        /// Deletes the journal at `url`, as ``remove()`` does, for one read back by
+        /// ``recover(at:)``.
+        public static func remove(at url: URL) {
             do {
                 try FileManager.default.removeItem(at: url)
             } catch {
