@@ -39,7 +39,7 @@
             let dir = try Sandbox()
             defer { dir.remove() }
 
-            let (root, a, b, source) = try Self.emptiedTree(in: dir)
+            let (root, a, _, source) = try Self.emptiedTree(in: dir)
 
             let removed = FileSystem.removeFoldersEmptied(byMoving: [source], within: root)
 
