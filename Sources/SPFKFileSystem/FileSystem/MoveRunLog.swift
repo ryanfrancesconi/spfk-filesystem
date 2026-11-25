@@ -107,6 +107,13 @@
             writeLogging(Record(kind: .final))
         }
 
+        /// Finished units moved back by a rollback that stranded another, which leaves the journal
+        /// open.
+        func recordUndone(_ units: [Int]) {
+            guard units.isNotEmpty else { return }
+            writeLogging(Record(kind: .undone, units: units))
+        }
+
         func recordEnd(rolledBack: [Int]) {
             writeLogging(Record(kind: .end, rolledBack: rolledBack))
         }
@@ -147,6 +154,9 @@
 
                 /// Every staged group has been parked and the first is about to finish.
                 case final
+
+                /// Groups recorded done that went back to their sources.
+                case undone
             }
 
             struct Step: Codable {

@@ -40,7 +40,7 @@
 
             var moved = journal.done
 
-            for (index, steps) in journal.units.sorted(by: { $0.key < $1.key }) where !journal.done.contains(index) {
+            for (index, steps) in journal.units.sorted(by: { $0.key < $1.key }) where !journal.done.contains(index) && !journal.undone.contains(index) {
                 if Self.settle(steps, finalPhaseBegan: journal.finalPhaseBegan) {
                     moved.insert(index)
                 }
@@ -176,6 +176,9 @@
             var operation = MoveOperation.move
             var units: [Int: [Record.Step]] = [:]
             var done: Set<Int> = []
+
+            /// Groups a rollback returned to their sources, which need no settling.
+            var undone: Set<Int> = []
             var finalPhaseBegan = false
             var rolledBack: Set<Int>?
 
@@ -212,6 +215,9 @@
                         if let index = record.index { units[index] = record.moves ?? [] }
                     case .done:
                         done.formUnion(record.units ?? [])
+                    case .undone:
+                        done.subtract(record.units ?? [])
+                        undone.formUnion(record.units ?? [])
                     case .final:
                         finalPhaseBegan = true
                     case .end:

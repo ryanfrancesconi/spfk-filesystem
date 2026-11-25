@@ -88,7 +88,7 @@
             case staging, direct, final
         }
 
-        private var done: [(move: MoveStep, phase: Phase)] = []
+        private var done: [(move: MoveStep, phase: Phase, unit: Int)] = []
         private var staged: [URL: URL] = [:]
 
         /// The units that reached their destinations, in the order they did.
@@ -107,8 +107,11 @@
             finishedIndexes.append(index)
         }
 
-        /// One unit's moves. A failure undoes this unit's own moves before rethrowing.
-        mutating func perform(_ moves: [MoveStep], phase: Phase) throws {
+        /// One unit's moves. A failure undoes this unit's own moves before rethrowing, and throws
+        /// ``FileCommandError/rollbackFailed(_:original:)`` instead when one cannot go back.
+        ///
+        /// - Parameter unit: the unit's index in the plan.
+        mutating func perform(_ moves: [MoveStep], phase: Phase, unit: Int) throws {
             var made: [MoveStep] = []
 
             do {
@@ -117,44 +120,48 @@
                     made.append(move)
                 }
             } catch {
-                if let stranded = Self.moveBack(made) { throw stranded }
-                throw error
+                let stranded = made.reversed().compactMap { Self.moveBack($0) }.first
+                throw stranded ?? error
             }
 
             for move in made {
-                done.append((move, phase))
+                done.append((move, phase, unit))
                 if phase == .staging { staged[move.from] = move.to }
             }
 
             if phase == .direct, let owner = moves.first { directSources.insert(owner.from) }
         }
 
-        /// Moves files back, newest first. Keeping `.direct` moves is safe: their destinations were
-        /// free of the set, so no staged file needs one to go back. Returns the first file stranded.
-        mutating func rollBack(keepingDirect: Bool) -> FileCommandError? {
-            let undone = done.filter { !(keepingDirect && $0.phase == .direct) }.map(\.move)
+        /// Moves files back, newest first, carrying on past a failure. Keeping `.direct` moves is
+        /// safe: their destinations were free of the set, so no staged file needs one to go back.
+        /// Returns the first file stranded and the index of every unit with a file that stayed.
+        mutating func rollBack(keepingDirect: Bool) -> (failure: FileCommandError?, strandedUnits: Set<Int>) {
+            let undone = done.filter { !(keepingDirect && $0.phase == .direct) }
             done.removeAll { !(keepingDirect && $0.phase == .direct) }
             let kept = finished.map { keepingDirect && directSources.contains($0.source) }
             finished = zip(finished, kept).filter(\.1).map(\.0)
             finishedIndexes = zip(finishedIndexes, kept).filter(\.1).map(\.0)
 
-            return Self.moveBack(undone)
-        }
-
-        /// Reverses `moves`, last first, carrying on past a failure. Returns the first file stranded.
-        private static func moveBack(_ moves: [MoveStep]) -> FileCommandError? {
             var firstFailure: FileCommandError?
+            var strandedUnits: Set<Int> = []
 
-            for move in moves.reversed() {
-                do {
-                    try self.move(from: move.to, to: move.from)
-                } catch {
-                    Log.error("Couldn't move \(move.to.lastPathComponent) back to \(move.from.lastPathComponent)", error)
-                    firstFailure = firstFailure ?? .rollbackFailed(move.to, original: move.from)
-                }
+            for entry in undone.reversed() {
+                guard let failure = Self.moveBack(entry.move) else { continue }
+                firstFailure = firstFailure ?? failure
+                strandedUnits.insert(entry.unit)
             }
 
-            return firstFailure
+            return (firstFailure, strandedUnits)
+        }
+
+        private static func moveBack(_ move: MoveStep) -> FileCommandError? {
+            do {
+                try self.move(from: move.to, to: move.from)
+                return nil
+            } catch {
+                Log.error("Couldn't move \(move.to.lastPathComponent) back to \(move.from.lastPathComponent)", error)
+                return .rollbackFailed(move.to, original: move.from)
+            }
         }
 
         private static func move(_ move: MoveStep) throws {

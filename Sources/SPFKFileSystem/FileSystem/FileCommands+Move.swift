@@ -28,7 +28,7 @@
         }
 
         /// Why each group of `plan` cannot move as part of the set, keyed by source. Empty when
-        /// ``move(_:rollingBackOnFailure:)`` would start moving files.
+        /// ``move(_:rollingBackOnFailure:log:progress:)`` would start moving files.
         ///
         /// A conflict depends on the rest of the set, so dropping a group can expose another.
         public nonisolated static func moveConflicts(in plan: MovePlan) -> [URL: FileCommandError] {
@@ -149,14 +149,14 @@
             }
 
             do {
-                for unit in plan.units where unit.isStaged {
+                for (index, unit) in plan.units.enumerated() where unit.isStaged {
                     try Task.checkCancellation()
-                    try journal.perform(unit.moves.map { $0.staging() }, phase: .staging)
+                    try journal.perform(unit.moves.map { $0.staging() }, phase: .staging, unit: index)
                 }
 
                 for (index, unit) in plan.units.enumerated() where !unit.isStaged {
                     try Task.checkCancellation()
-                    try journal.perform(unit.moves, phase: .direct)
+                    try journal.perform(unit.moves, phase: .direct, unit: index)
                     finish(index)
                 }
 
@@ -168,7 +168,7 @@
                 // cheaper than unwinding.
                 for (index, unit) in plan.units.enumerated() where unit.isStaged {
                     let moves = unit.moves.map { $0.fromStaging(journal.stagedLocation(of: $0.from)) }
-                    try journal.perform(moves, phase: .final)
+                    try journal.perform(moves, phase: .final, unit: index)
                     finish(index)
                 }
 
@@ -180,12 +180,17 @@
 
                 let before = Set(journal.finishedIndexes)
 
-                let rollbackError = journal.rollBack(keepingDirect: !rollingBackOnFailure)
+                let (rollbackError, strandedUnits) = journal.rollBack(keepingDirect: !rollingBackOnFailure)
                 createdFolders = removeUnusedFolders(createdFolders)
+                let rolledBack = before.subtracting(journal.finishedIndexes)
 
-                if let rollbackError { throw rollbackError }
+                // A stranded file leaves the journal open, so recovery settles it from the disk.
+                if let stranded = rollbackError ?? Self.stranded(error) {
+                    log?.recordUndone(rolledBack.subtracting(strandedUnits).sorted())
+                    throw stranded
+                }
 
-                log?.recordEnd(rolledBack: before.subtracting(journal.finishedIndexes).sorted())
+                log?.recordEnd(rolledBack: rolledBack.sorted())
 
                 if rollingBackOnFailure { throw error }
 
@@ -195,6 +200,11 @@
             log?.recordEnd(rolledBack: [])
 
             return moves(journal.finished, createdFolders: createdFolders, failure: nil)
+        }
+
+        private nonisolated static func stranded(_ error: any Error) -> FileCommandError? {
+            guard let error = error as? FileCommandError, case .rollbackFailed = error else { return nil }
+            return error
         }
 
         private nonisolated static func moves(_ units: [MoveUnit], createdFolders: [URL], failure: (any Error)?) -> FileMoves {

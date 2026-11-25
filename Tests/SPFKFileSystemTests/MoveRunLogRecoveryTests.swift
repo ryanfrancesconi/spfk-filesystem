@@ -23,6 +23,7 @@
             units: [[Step]],
             done: [Int] = [],
             final: Bool = false,
+            undone: [Int] = [],
             rolledBack: [Int]? = nil,
             tail: String = "",
             operation: MoveOperation = .move
@@ -36,6 +37,7 @@
 
             if done.isNotEmpty { data.append(try MoveRunLog.line(.init(kind: .done, units: done))) }
             if final { data.append(try MoveRunLog.line(.init(kind: .final))) }
+            if undone.isNotEmpty { data.append(try MoveRunLog.line(.init(kind: .undone, units: undone))) }
             if let rolledBack { data.append(try MoveRunLog.line(.init(kind: .end, rolledBack: rolledBack))) }
 
             data.append(Data(tail.utf8))
@@ -157,6 +159,34 @@
 
             let final = try Self.journal(in: dir, units: units, final: true)
             #expect(try MoveRunLog.recover(at: final).moves.moved == [a: b, b: a])
+        }
+
+        /// A rollback that stranded one half of a swap returned the other half: that half is not
+        /// moved, though a file now sits at its destination.
+        @Test func aUnitRolledBackBesideAStrandedOneIsNotMoved() throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let a = dir.url.appendingPathComponent("a.jpg")
+            let b = dir.url.appendingPathComponent("b.jpg")
+            let parkedB = dir.url.appendingPathComponent(".spfk-rename-Y-b.jpg")
+            try Self.touch(a, "a")
+            try Self.touch(parkedB, "b")
+
+            let url = try Self.journal(
+                in: dir,
+                units: [
+                    [Self.step(b, a, staging: parkedB)],
+                    [Self.step(a, b, staging: dir.url.appendingPathComponent(".spfk-rename-X-a.jpg"))],
+                ],
+                done: [1],
+                final: true,
+                undone: [1]
+            )
+
+            #expect(try MoveRunLog.recover(at: url).moves.moved.isEmpty)
+            #expect(Self.contents(a) == "a")
+            #expect(Self.contents(b) == "b")
         }
 
         @Test func anOwnerAtItsDestinationPullsItsCompanionAlong() throws {
