@@ -61,7 +61,7 @@ final class OriginalsStoreTests: BinTestCase {
     }
 
     /// A copy written as a new file drops every product's mark and keeps the file's other attributes.
-    @Test func removingMarksLeavesACopyWithNoOriginal() throws {
+    @Test(.tags(.renameOrganize)) func removingMarksLeavesACopyWithNoOriginal() throws {
         let url = try file()
         let other = OriginalsStore(root: bin.appendingPathComponent("Other"), product: "other")
         _ = try store.keep(url)
@@ -200,7 +200,7 @@ final class OriginalsStoreTests: BinTestCase {
         #expect(store.original(for: renamed) == kept)
     }
 
-    @Test func theMarkFollowsAMoveIntoAnotherFolder() throws {
+    @Test(.tags(.renameOrganize)) func theMarkFollowsAMoveIntoAnotherFolder() throws {
         let url = try file()
         let kept = try #require(try store.keep(url))
         let folder = url.deletingLastPathComponent().appendingPathComponent("2026/05", isDirectory: true)
