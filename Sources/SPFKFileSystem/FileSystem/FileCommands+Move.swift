@@ -120,8 +120,14 @@
                 return FileMoves(failure: CancellationError())
             }
 
-            let createdFolders = try createDestinationFolders(for: plan.units)
-            try log?.record(plan.units)
+            var createdFolders = try createDestinationFolders(for: plan.units)
+
+            do {
+                try log?.record(plan.units)
+            } catch {
+                removeUnusedFolders(createdFolders)
+                throw error
+            }
 
             var journal = MoveExecutionJournal()
             var unlogged: [Int] = []
@@ -174,9 +180,10 @@
 
                 let before = Set(journal.finishedIndexes)
 
-                if let rollbackError = journal.rollBack(keepingDirect: !rollingBackOnFailure) {
-                    throw rollbackError
-                }
+                let rollbackError = journal.rollBack(keepingDirect: !rollingBackOnFailure)
+                createdFolders = removeUnusedFolders(createdFolders)
+
+                if let rollbackError { throw rollbackError }
 
                 log?.recordEnd(rolledBack: before.subtracting(journal.finishedIndexes).sorted())
 
@@ -201,8 +208,15 @@
             return result
         }
 
+        /// Removes each of `created` left empty by a failed run. Returns the ones still in use.
+        @discardableResult
+        nonisolated static func removeUnusedFolders(_ created: [URL]) -> [URL] {
+            let removed = Set(FileSystem.removeEmptyFolders(created).map(\.path))
+            return created.filter { !removed.contains($0.standardizedFileURL.path) }
+        }
+
         /// Creates every destination folder that does not exist yet. Returns each one created,
-        /// parents before children.
+        /// parents before children; a failure removes those already made.
         nonisolated static func createDestinationFolders(for units: [MoveUnit]) throws -> [URL] {
             var created: [URL] = []
             var checked: Set<String> = []
@@ -223,6 +237,9 @@
                     } catch let error as CocoaError where error.code == .fileWriteFileExists && url.isDirectory {
                         // Made by someone else since the check; it is not this run's to remove.
                         continue
+                    } catch {
+                        removeUnusedFolders(created)
+                        throw error
                     }
                 }
             }

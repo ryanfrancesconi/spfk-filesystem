@@ -54,7 +54,13 @@
             }
 
             let createdFolders = try createDestinationFolders(for: plan.units)
-            try log?.record(plan.units)
+
+            do {
+                try log?.record(plan.units)
+            } catch {
+                removeUnusedFolders(createdFolders)
+                throw error
+            }
 
             let sizes = plan.units.map { $0.moves.map { Int64($0.from.fileSize ?? 0) } }
             let meter = CopyMeter(total: sizes.joined().reduce(0, +), report: progress)
@@ -81,12 +87,15 @@
 
                 guard rollingBackOnFailure else {
                     log?.recordEnd(rolledBack: [])
-                    return copies(finished.map { plan.units[$0] }, createdFolders: createdFolders, failure: error)
+                    let inUse = removeUnusedFolders(createdFolders)
+                    return copies(finished.map { plan.units[$0] }, createdFolders: inUse, failure: error)
                 }
 
                 for index in finished.reversed() {
                     removeCopies(plan.units[index].moves.reversed().map(\.to))
                 }
+
+                removeUnusedFolders(createdFolders)
 
                 log?.recordEnd(rolledBack: finished)
                 throw error
