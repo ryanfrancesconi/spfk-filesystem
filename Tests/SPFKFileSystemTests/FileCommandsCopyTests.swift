@@ -194,6 +194,7 @@
             #expect(copies.moved == [from.appendingPathComponent("0000.mov"): to.appendingPathComponent("0000.mov")])
             #expect(copies.failure != nil)
             #expect(!copies.wasCancelled)
+            #expect(copies.createdFolders.map(\.standardizedFileURL.path) == [to.standardizedFileURL.path])
             #expect(Self.names(in: to) == ["0000.mov"])
             #expect(Self.stagingNames(under: dir.url).isEmpty)
         }

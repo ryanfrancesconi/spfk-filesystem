@@ -76,6 +76,60 @@
             #expect(!dir.url.appendingPathComponent("unused").exists)
         }
 
+        /// Cancelled once 100 groups have moved, the run moves them back and leaves no new folder.
+        @Test func aCancelledMoveRemovesTheFoldersItCreated() async throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let (plan, from, to) = try FileMoveCancellationTests.directPlan(150, in: dir)
+
+            let result = await Task.detached {
+                try FileCommands.move(plan, rollingBackOnFailure: true) { finished, _ in
+                    if finished >= 100 { withUnsafeCurrentTask { $0?.cancel() } }
+                }
+            }.result
+
+            #expect(throws: CancellationError.self) { try result.get() }
+            #expect(!to.exists)
+            #expect(FileMoveCancellationTests.names(in: from).count == 150)
+        }
+
+        /// A rotation in which every group parks first. Once 100 have finished, the next group's
+        /// parked file is gone, so the final phase fails; the folder the first group's companion
+        /// moved into does not stay.
+        @Test func aFailureInTheFinalPhaseRemovesTheFoldersItCreated() throws {
+            let dir = try Sandbox()
+            defer { dir.remove() }
+
+            let count = 101
+            let names = (0 ..< count).map { String(format: "f%03d.wav", $0) }
+            let sources = try names.map { try dir.file(named: $0) }
+            let sidecar = try dir.file(named: "f000.xmp")
+            let created = dir.url.appendingPathComponent("Sidecars", isDirectory: true)
+
+            var entries: [MovePlan.Entry] = []
+
+            for index in 0 ..< count {
+                let companions = index == 0 ? [MovePlan.CompanionMove(from: sidecar, to: created.appendingPathComponent("f000.xmp"))] : []
+                entries.append(.move(MovePlan.Group(source: sources[index], destination: sources[(index + 1) % count], companions: companions)))
+            }
+
+            let directory = dir.url
+
+            #expect(throws: (any Error).self) {
+                try FileCommands.move(MovePlan(entries: entries), rollingBackOnFailure: true) { finished, _ in
+                    guard finished == 100 else { return }
+
+                    let parked = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+                    for name in parked where name.hasPrefix(".spfk-rename-") && name.hasSuffix("-f100.wav") {
+                        try? FileManager.default.removeItem(at: directory.appendingPathComponent(name))
+                    }
+                }
+            }
+
+            #expect(!created.exists)
+        }
+
         @Test func aFailedCopyRollingBackRemovesTheFoldersItCreated() throws {
             let dir = try Sandbox()
             defer { dir.remove() }
