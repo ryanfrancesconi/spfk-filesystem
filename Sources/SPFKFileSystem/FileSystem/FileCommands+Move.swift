@@ -81,7 +81,7 @@
 
                     claimedBy[path] = source
 
-                    switch moving.occupant(of: move.to) {
+                    switch moving.occupant(of: move.to, standardizedPath: path) {
                     case .none:
                         break
                     case let .moving(occupant) where occupant == move.from:

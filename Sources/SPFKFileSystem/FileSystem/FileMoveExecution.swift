@@ -53,31 +53,32 @@
             case outside
         }
 
-        private let byFoldedPath: [String: [URL]]
+        /// Each file with its standardized path, read once: standardizing touches the disk.
+        private let byFoldedPath: [String: [(url: URL, path: String)]]
 
         init(_ urls: [URL]) {
-            byFoldedPath = Dictionary(grouping: urls, by: { Self.folded($0) })
+            byFoldedPath = Dictionary(grouping: urls.map { ($0, $0.standardizedFileURL.path) }, by: { Self.folded($0.1) })
         }
 
-        func occupant(of url: URL) -> Occupant? {
-            let candidates = byFoldedPath[Self.folded(url)] ?? []
-            let path = url.standardizedFileURL.path
+        /// - Parameter path: `url.standardizedFileURL.path`.
+        func occupant(of url: URL, standardizedPath path: String) -> Occupant? {
+            let candidates = byFoldedPath[Self.folded(path)] ?? []
 
-            if let exact = candidates.first(where: { $0.standardizedFileURL.path == path }) {
-                return .moving(exact)
+            if let exact = candidates.first(where: { $0.path == path }) {
+                return .moving(exact.url)
             }
 
             guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 
-            if let same = candidates.first(where: { FileSystem.isSameFile($0, url) }) {
-                return .moving(same)
+            if let same = candidates.first(where: { FileSystem.isSameFile($0.url, url) }) {
+                return .moving(same.url)
             }
 
             return .outside
         }
 
-        static func folded(_ url: URL) -> String {
-            url.standardizedFileURL.path.decomposedStringWithCanonicalMapping.lowercased()
+        static func folded(_ standardizedPath: String) -> String {
+            standardizedPath.decomposedStringWithCanonicalMapping.lowercased()
         }
     }
 
