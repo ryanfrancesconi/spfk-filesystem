@@ -112,7 +112,7 @@ public enum MoveSkipReason: Sendable, Hashable {
         case let .nameInUse(url):
             localized("An item named \"\(url.lastPathComponent)\" already exists in this location.")
         case let .duplicate(url):
-            localized("An identical file, \"\(url.lastPathComponent)\", is already moving there.")
+            localized("An identical file, \"\(url.lastPathComponent)\", is already going there.")
         }
     }
 }
