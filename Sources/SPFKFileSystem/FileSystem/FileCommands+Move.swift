@@ -7,16 +7,14 @@
 
     extension FileCommands {
         /// Moves each of the plan's groups as one set, in an order that lets the set reuse its own
-        /// names - a swap, a chain, a shift - creating any missing destination folder.
+        /// names (a swap, a chain, a shift), creating any missing destination folder.
         ///
-        /// Nothing moves until every destination has been checked; one held by a file outside the
-        /// set throws. No file is ever left under a temporary name. On a failure partway
-        /// `rollingBackOnFailure` moves every file back and throws; otherwise the groups that
-        /// finished stay and are returned with the error.
-        ///
-        /// Cancelling the calling task stops the run between groups, as a failure does, with
-        /// ``FileMoves/wasCancelled`` set. `progress` is called after every 100 finished groups and
-        /// once at the end, on the calling thread. `log` records the run as it goes.
+        /// A destination held by a file outside the set throws before anything moves. A failure or
+        /// a cancel partway moves every file back and throws when `rollingBackOnFailure`, and
+        /// otherwise returns the finished groups with the error; a file that cannot go back throws
+        /// ``FileCommandError/rollbackFailed(_:original:)`` and leaves `log` open for
+        /// ``MoveRunLog/recover(at:)``. `progress` runs on the calling thread every 100 groups and
+        /// at the end.
         @discardableResult
         public nonisolated static func move(
             _ plan: MovePlan,

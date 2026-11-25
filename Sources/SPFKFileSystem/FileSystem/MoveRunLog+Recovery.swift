@@ -14,17 +14,13 @@
     }
 
     extension MoveRunLog {
-        /// The groups the journaled run moved, after bringing the disk to a state where no file is
-        /// left under a temporary name and every group is whole.
+        /// The groups the journaled run moved, after settling the disk so no file is left under a
+        /// temporary name and every group is whole. A copy's journal moves nothing: unfinished
+        /// groups' hidden files are deleted.
         ///
-        /// A journal that ended is answered from its lines alone. Otherwise each group not
-        /// recorded as finished is read from disk: a parked file goes on to its destination if
-        /// that is free, else back; then its companions join the owner, wherever it ended. The
-        /// answer is appended to the journal, so a second recovery returns it without touching
-        /// the disk. A step that can go neither way is left where it is and logged.
-        ///
-        /// A copy's journal moves nothing: each unfinished group's staged files, which may be
-        /// partial, are deleted, and the copies renamed into place stay.
+        /// An ended journal is answered from its lines alone. Otherwise each unfinished group is
+        /// read from disk, its parked file going on to its destination if free, else back, and its
+        /// companions joining the owner; the answer is appended, so a second recovery reads no disk.
         public static func recover(at url: URL) throws -> RecoveredMoves {
             let journal = try Contents(reading: url)
 

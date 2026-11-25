@@ -6,18 +6,14 @@
     import SPFKBase
 
     extension FileCommands {
-        /// Copies each of the plan's groups to its destination, leaving the sources in place and
-        /// creating any missing destination folder. ``FileMoves/moved`` maps each source to its copy.
+        /// Copies each of the plan's groups to its destination, cloning where the volume allows and
+        /// creating any missing folder. ``FileMoves/moved`` maps each source to its copy.
         ///
-        /// Nothing is written until every destination has been checked; one that exists, or that
-        /// two groups claim, throws. Each file is copied under a hidden name in its destination
-        /// folder, cloned where the volume allows, and renamed into place once its whole group is
-        /// copied, so a file at a destination is always whole. A copy of a locked file is unlocked.
-        ///
-        /// On a failure partway `rollingBackOnFailure` deletes every copy made and throws; otherwise
-        /// the groups that finished stay and are returned with the error. Cancelling the calling
-        /// task stops the run within the file being copied. `progress` reports bytes across the
-        /// run, on the calling thread. `log` records the run as it goes.
+        /// A destination that exists, or that two groups claim, throws before anything is written.
+        /// Each group is copied under hidden names and renamed into place whole, unlocked. A failure
+        /// or a cancel partway deletes every copy and throws when `rollingBackOnFailure`, and
+        /// otherwise returns the finished groups with the error. `progress` reports bytes on the
+        /// calling thread.
         @discardableResult
         public nonisolated static func copy(
             _ plan: MovePlan,
